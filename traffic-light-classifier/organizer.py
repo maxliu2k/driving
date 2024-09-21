@@ -1,0 +1,1 @@
+# look into the images folder and then generate a dataset folder that splits all the images into train, test, and validation folders
