@@ -2,13 +2,6 @@ import cv2
 import os
 
 def splice_images(video_path, video_name, output_folder, time_interval):
-    # create the output folder if it doesn't exist
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    image_path = output_folder + "/" + video_name
-    if not os.path.exists(image_path):
-        os.makedirs(image_path)
-
     # open the video file
     video = cv2.VideoCapture(video_path)
 
@@ -18,13 +11,17 @@ def splice_images(video_path, video_name, output_folder, time_interval):
     if not video.isOpened():
         print("Error opening video file")
         return
+
+    # create the output folder if it doesn't exist
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    image_path = output_folder + "/" + video_name
+    if not os.path.exists(image_path):
+        os.makedirs(image_path)
     
     # get video information
     fps = round(video.get(cv2.CAP_PROP_FPS))
-    print(fps)
     frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    print()
 
     # read the video frame by frame
     for i in range(frame_count):
@@ -37,14 +34,14 @@ def splice_images(video_path, video_name, output_folder, time_interval):
         # check if the current frame is within the time interval
         if i / fps % time_interval == 0:
             # save the frame
-            cv2.imwrite(os.path.join(image_path, video_name + f"{(i//fps):04d}.jpg"), frame)
+            cv2.imwrite(os.path.join(image_path, video_name + "_" + f"{(i//fps):04d}.jpg"), frame)
 
     video.release()
-    print("Splicing complete")
+    print("Splicing complete:" + (str) (i//fps))
 
 
 if __name__ == "__main__":
-    for i in range(1433, 1446):
+    for i in range(1409, 1446):
         video_path = f"videos/IMG_{i:04d}.MOV"
         video_name = f"{i:04d}"
         output_folder = "images"
