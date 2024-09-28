@@ -5,9 +5,15 @@ def splice_images(video_path, video_name, output_folder, time_interval):
     # create the output folder if it doesn't exist
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
+    image_path = output_folder + "/" + video_name
+    if not os.path.exists(image_path):
+        os.makedirs(image_path)
 
     # open the video file
     video = cv2.VideoCapture(video_path)
+
+    if not video.isOpened():
+        cv2.VideoCapture(video_path[0:16] + ".mov")
 
     if not video.isOpened():
         print("Error opening video file")
@@ -31,16 +37,16 @@ def splice_images(video_path, video_name, output_folder, time_interval):
         # check if the current frame is within the time interval
         if i / fps % time_interval == 0:
             # save the frame
-            cv2.imwrite(os.path.join(output_folder, video_name + f"{(i//fps):04d}.jpg"), frame)
+            cv2.imwrite(os.path.join(image_path, video_name + f"{(i//fps):04d}.jpg"), frame)
 
     video.release()
     print("Splicing complete")
 
 
 if __name__ == "__main__":
-    for i in range(1409, 1420):
-        video_path = f"Dataset20240927Videos/IMG_{i:04d}.MOV"
+    for i in range(1433, 1446):
+        video_path = f"videos/IMG_{i:04d}.MOV"
         video_name = f"{i:04d}"
-        output_folder = "Dataset20240927Images"
+        output_folder = "images"
         time_interval = 1  # interval in seconds
         splice_images(video_path, video_name, output_folder, time_interval)
