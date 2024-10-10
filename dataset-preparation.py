@@ -4,7 +4,7 @@ import pandas as pd
 from PIL import Image
 import zipfile
 
-# # LISA_traffic_lights
+# enter model name
 model_name='traffic_lights'
 
 lisa_unzip_path='D:/TeenSafe/DataSet/LISA_'+ model_name + '_original/'
