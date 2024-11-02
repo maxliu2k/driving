@@ -1,3 +1,11 @@
+# Direction: Stationary, Acceleration: 1.11, Ax: -0.05, Ay: 0.01, Az: 1.11, Gyro X: -0.29, Gyro Y: -0.07, Gyro Z: -0.09
+Ax_offset = 0.05
+Ay_offset = -0.01
+Az_offset = 1.11
+Gx_offset = 0.29
+Gy_offset = 0.07
+Gz_offset = 0.09
+
 import smbus					#import SMBus module of I2C
 from time import sleep          #import
 import math
@@ -104,32 +112,33 @@ def main():
 
     print("Reading Data of Gyroscope and Accelerometer")
 
-    counter = 0
-    Ax_avg = 0
-    Ay_avg = 0
-    Az_avg = 0
-    Gx_avg = 0
-    Gy_avg = 0
-    Gz_avg = 0
+    # counter = 0
+    # Ax_avg = 0
+    # Ay_avg = 0
+    # Az_avg = 0
+    # Gx_avg = 0
+    # Gy_avg = 0
+    # Gz_avg = 0
     while True:
-        counter += 1
+        # counter += 1
         direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
-        Ax_avg += Ax
-        Ay_avg += Ay
-        Az_avg += Az
-        Gx_avg += Gx
-        Gy_avg += Gy
-        Gz_avg += Gz
+        # Ax_avg += Ax
+        # Ay_avg += Ay
+        # Az_avg += Az
+        # Gx_avg += Gx
+        # Gy_avg += Gy
+        # Gz_avg += Gz
 
-        if counter % 10 == 0:
-            Ax_avg /= 10
-            Ay_avg /= 10
-            Az_avg /= 10
-            Gx_avg /= 10
-            Gy_avg /= 10
-            Gz_avg /= 10
+        # if counter % 10 == 0:
+        #     Ax_avg /= 10
+        #     Ay_avg /= 10
+        #     Az_avg /= 10
+        #     Gx_avg /= 10
+        #     Gy_avg /= 10
+        #     Gz_avg /= 10
 
-            print(f"Direction: {direction}, Acceleration: {accel_magnitude:.2f}, Ax: {Ax_avg:.2f}, Ay: {Ay_avg:.2f}, Az: {Az_avg:.2f}, Gyro X: {Gx_avg:.2f}, Gyro Y: {Gy_avg:.2f}, Gyro Z: {Gz_avg:.2f}")	
+            # print(f"Direction: {direction}, Acceleration: {accel_magnitude:.2f}, Ax: {Ax_avg:.2f}, Ay: {Ay_avg:.2f}, Az: {Az_avg:.2f}, Gyro X: {Gx_avg:.2f}, Gyro Y: {Gy_avg:.2f}, Gyro Z: {Gz_avg:.2f}")	
+        print(f"Direction: {direction}, Acceleration: {accel_magnitude:.2f}, Ax: {(Ax + Ax_offset):.2f}, Ay: {(Ay + Ay_offset):.2f}, Az: {(Az + Az_offset):.2f}, Gyro X: {(Gx + Gx_offset):.2f}, Gyro Y: {(Gy + Gy_offset):.2f}, Gyro Z: {(Gz + Gz_offset):.2f}")
         sleep(1)
 
 if __name__ == "__main__":
