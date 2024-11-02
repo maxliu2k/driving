@@ -48,6 +48,15 @@ def read_raw_data(addr):
         return value
 
 def get_motion_data():
+    """
+    Ax: Acceleration in X direction
+    Ay: Acceleration in Y direction
+    Az: Acceleration in Z direction
+    Gx: Angular velocity in X direction
+    Gy: Angular velocity in Y direction
+    Gz: Angular velocity in Z direction
+    """
+
     #Read Accelerometer raw value
     acc_x = read_raw_data(ACCEL_XOUT_H)
     acc_y = read_raw_data(ACCEL_YOUT_H)
@@ -87,18 +96,18 @@ def get_direction_and_acceleration():
     else:
         direction = "Stationary"
     
-    return direction, accel_magnitude, Gx, Gy, Gz
+    return direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz
 
 
 def main():
     MPU_Init()
 
-    print (" Reading Data of Gyroscope and Accelerometer")
+    print("Reading Data of Gyroscope and Accelerometer")
 
     while True:
         
-        direction, accel_magnitude, Gx, Gy, Gz = get_direction_and_acceleration()
-        print(f"Direction: {direction}, Acceleration: {accel_magnitude}, Gyro X: {Gx}, Gyro Y: {Gy}, Gyro Z: {Gz}")	
+        direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
+        print(f"Direction: {direction}, Acceleration: {accel_magnitude}, Ax: {Ax}, Ay: {Ay}, Az: {Az}, Gyro X: {Gx}, Gyro Y: {Gy}, Gyro Z: {Gz}")	
         sleep(1)
 
 if __name__ == "__main__":
