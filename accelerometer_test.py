@@ -6,7 +6,7 @@ Gx_offset = 0.29
 Gy_offset = 0.07
 Gz_offset = 0.09
 
-import smbus					#import SMBus module of I2C
+import smbus					# type: ignore #import SMBus module of I2C
 from time import sleep          #import
 import math
 
