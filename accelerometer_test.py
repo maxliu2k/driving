@@ -107,7 +107,7 @@ def main():
     while True:
         
         direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
-        print(f"Direction: {direction}, Acceleration: {accel_magnitude}, Ax: {Ax}, Ay: {Ay}, Az: {Az}, Gyro X: {Gx}, Gyro Y: {Gy}, Gyro Z: {Gz}")	
+        print(f"Direction: {direction}, Acceleration: {accel_magnitude:.2f}, Ax: {Ax:.2f}, Ay: {Ay:.2f}, Az: {Az:.2f}, Gyro X: {Gx:.2f}, Gyro Y: {Gy:.2f}, Gyro Z: {Gz:.2f}")	
         sleep(1)
 
 if __name__ == "__main__":
