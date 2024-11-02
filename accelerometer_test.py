@@ -104,10 +104,32 @@ def main():
 
     print("Reading Data of Gyroscope and Accelerometer")
 
+    counter = 0
+    Ax_avg = 0
+    Ay_avg = 0
+    Az_avg = 0
+    Gx_avg = 0
+    Gy_avg = 0
+    Gz_avg = 0
     while True:
-        
+        counter += 1
         direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
-        print(f"Direction: {direction}, Acceleration: {accel_magnitude:.2f}, Ax: {Ax:.2f}, Ay: {Ay:.2f}, Az: {Az:.2f}, Gyro X: {Gx:.2f}, Gyro Y: {Gy:.2f}, Gyro Z: {Gz:.2f}")	
+        Ax_avg += Ax
+        Ay_avg += Ay
+        Az_avg += Az
+        Gx_avg += Gx
+        Gy_avg += Gy
+        Gz_avg += Gz
+
+        if counter % 10 == 0:
+            Ax_avg /= 10
+            Ay_avg /= 10
+            Az_avg /= 10
+            Gx_avg /= 10
+            Gy_avg /= 10
+            Gz_avg /= 10
+
+            print(f"Direction: {direction}, Acceleration: {accel_magnitude:.2f}, Ax: {Ax_avg:.2f}, Ay: {Ay_avg:.2f}, Az: {Az_avg:.2f}, Gyro X: {Gx_avg:.2f}, Gyro Y: {Gy_avg:.2f}, Gyro Z: {Gz_avg:.2f}")	
         sleep(1)
 
 if __name__ == "__main__":
