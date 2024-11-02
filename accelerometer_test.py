@@ -1,7 +1,7 @@
 # Direction: Stationary, Acceleration: 1.11, Ax: -0.05, Ay: 0.01, Az: 1.11, Gyro X: -0.29, Gyro Y: -0.07, Gyro Z: -0.09
 Ax_offset = 0.05
 Ay_offset = -0.01
-Az_offset = 1.11
+Az_offset = -1.11
 Gx_offset = 0.29
 Gy_offset = 0.07
 Gz_offset = 0.09
