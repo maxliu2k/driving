@@ -1,6 +1,7 @@
 from voice import Voice
 import cv2
 from ultralytics import YOLO
+from utils import *
 
 def update_lights(new_light_data, old_light_data):
     """
@@ -49,10 +50,14 @@ def main():
 
     # Load YOLO model
     l_model = YOLO('bestlights.pt')
-    s_model = YOLO('bestsigns.pt')
+    # s_model = YOLO('bestsigns.pt')
+    b_model = YOLO('bestbulbs.pt')
 
     # Start video stream
-    cap = cv2.VideoCapture(0)
+    # cap = cv2.VideoCapture(0)
+
+    # alternatively, use a video file
+    cap = cv2.VideoCapture('videos/IMG_1412.MOV')
 
     voice.speak("Recording started!")
 
@@ -72,7 +77,44 @@ def main():
         # identify if the lights found are green, red, yellow, or some combination
 
         # identify traffic signs in the image
-        s_results = s_model(frame)
+        # s_results = s_model(frame)
+
+        # iterate through all the traffic lights found
+        annotated_frame = l_results[0].plot()
+        for result in l_results[0].boxes:
+            # check confidence
+            if result.conf > 0.5:
+                print(result)
+
+                # extract the bounding box coordinates
+                x, y, w, h = result.xywh[0]
+                print("IMAGE COORDINATES")
+                print(x, y, w, h)
+
+
+                # crop the image to the traffic light
+                cropped_frame = crop_image(frame, (x, y, w, h))
+
+                # for debugging, save the cropped image as a file
+                # cv2.imwrite("cropped.jpg", cropped_frame)
+
+                # also save the original frame annotated with the bounding box
+                # cv2.imwrite("annotated.jpg", annotated_frame)
+
+                # identify the bulb color in the image
+                b_results = b_model(cropped_frame)
+                print(b_results)
+
+        
+        # show the annotated frame
+        cv2.imshow("Annotated Frame", annotated_frame)
+        # Exit on 'q' key press
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+                
+                
+
 
         # identify the speed limit in the image
 
@@ -83,7 +125,7 @@ def main():
         # - If stopped at right light that turns green, say "Green"
         
         # simulate the AI finding two new lights
-        
+        new_lights = [(0.1,0.1,0.3,0.3,'green',0.9,0.9, False), (0.4,0.4,0.6,0.6,'red',0.9,0.9, False)]
 
         
 
@@ -93,6 +135,7 @@ def main():
         
 
     cap.release()
+    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

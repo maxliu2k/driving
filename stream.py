@@ -5,7 +5,8 @@ from ultralytics import YOLO
 model = YOLO('bestlights.pt')
 
 # Start video stream
-cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture('videos/IMG_1412.MOV')
 
 while cap.isOpened():
     # Read video frame

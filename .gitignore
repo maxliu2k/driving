@@ -1,6 +1,8 @@
 rpi-logic/venv
 videos
 
+videos/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
