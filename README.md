@@ -4,12 +4,14 @@
 
 [X]  Raspberry Pi 5
 [ ]  Speaker
-[ ]  Camera
-[ ]  Accelerometer
+[X]  Camera
+[ ]  Microphone
+[X]  Accelerometer
      - Direction
      - Acceleration/Speed
      - https://learn.adafruit.com/mpu6050-6-dof-accelerometer-and-gyro/python-and-circuitpython
 [ ]  Battery Source
+[ ]  GPS Sensor
 [ ]  *Case
 
 

@@ -54,10 +54,10 @@ def main():
     b_model = YOLO('bestbulbs.pt')
 
     # Start video stream
-    # cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(0)
 
     # alternatively, use a video file
-    cap = cv2.VideoCapture('videos/IMG_1412.MOV')
+    #cap = cv2.VideoCapture('videos/IMG_1412.MOV')
 
     voice.speak("Recording started!")
 
@@ -79,6 +79,8 @@ def main():
         # identify traffic signs in the image
         # s_results = s_model(frame)
 
+        identified_lights = []
+
         # iterate through all the traffic lights found
         annotated_frame = l_results[0].plot()
         for result in l_results[0].boxes:
@@ -88,8 +90,8 @@ def main():
 
                 # extract the bounding box coordinates
                 x, y, w, h = result.xywh[0]
-                print("IMAGE COORDINATES")
-                print(x, y, w, h)
+                # print("IMAGE COORDINATES")
+                # print(x, y, w, h)
 
 
                 # crop the image to the traffic light
@@ -103,14 +105,23 @@ def main():
 
                 # identify the bulb color in the image
                 b_results = b_model(cropped_frame)
-                print(b_results)
+                # print(b_results)
+
+                # format the data for the update_lights function
+                x1, y1, x2, y2 = result.xyxy[0]
+                color = b_results[0].names[0]
+                light_conf = result.conf
+                color_conf = b_results[0].conf
+                identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
+        
+        print(f"Identified lights: {identified_lights}")
 
         
         # show the annotated frame
-        cv2.imshow("Annotated Frame", annotated_frame)
-        # Exit on 'q' key press
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        # cv2.imshow("Annotated Frame", annotated_frame)
+        # # Exit on 'q' key press
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
 
                 
                 
@@ -123,6 +134,8 @@ def main():
 
         # TTS for the lights
         # - If stopped at right light that turns green, say "Green"
+        if False:
+            voice.speak('Green')
         
         # simulate the AI finding two new lights
         new_lights = [(0.1,0.1,0.3,0.3,'green',0.9,0.9, False), (0.4,0.4,0.6,0.6,'red',0.9,0.9, False)]
