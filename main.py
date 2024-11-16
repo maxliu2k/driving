@@ -111,17 +111,17 @@ def main():
                 x1, y1, x2, y2 = result.xyxy[0]
                 color = b_results[0].names[0]
                 light_conf = result.conf
-                color_conf = b_results[0].conf
+                color_conf = b_results[0].boxes
                 identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
         
         print(f"Identified lights: {identified_lights}")
 
         
         # show the annotated frame
-        # cv2.imshow("Annotated Frame", annotated_frame)
-        # # Exit on 'q' key press
-        # if cv2.waitKey(1) & 0xFF == ord('q'):
-        #     break
+        cv2.imshow("Annotated Frame", annotated_frame)
+        # Exit on 'q' key press
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
                 
                 
