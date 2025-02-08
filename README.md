@@ -50,3 +50,19 @@
 
 # How to Automate the Programs with Systemctl
 
+
+
+
+
+
+# Past Record Drives
+- Mistakes made
+    - running a red light
+    - traffic sign violation (e.g. over speed limit * 1.2)
+    - forgetting turn signal
+    - "nice to haves"
+        - lane changes, seatbelt, etc.
+        - Score
+            - 0-100 scale
+            - based on mistakes and time
+            - 
