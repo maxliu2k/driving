@@ -2,6 +2,7 @@ rpi-logic/venv
 videos
 
 videos/
+piper.onnx
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
