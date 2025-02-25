@@ -2,7 +2,91 @@ from voice import Voice
 import cv2
 from ultralytics import YOLO
 from utils import *
+import smbus
+from time import sleep
+import math
 
+
+# ===============================
+# Accelerometer (MPU6050) Setup
+# ===============================
+# MPU6050 Registers
+PWR_MGMT_1   = 0x6B
+SMPLRT_DIV   = 0x19
+CONFIG       = 0x1A
+GYRO_CONFIG  = 0x1B
+INT_ENABLE   = 0x38
+ACCEL_XOUT_H = 0x3B
+ACCEL_YOUT_H = 0x3D
+ACCEL_ZOUT_H = 0x3F
+GYRO_XOUT_H  = 0x43
+GYRO_YOUT_H  = 0x45
+GYRO_ZOUT_H  = 0x47
+
+bus = smbus.SMBus(1)     # For Raspberry Pi
+Device_Address = 0x68    # MPU6050 device address
+
+# Offsets provided for calibration
+Ax_offset = 0.05
+Ay_offset = -0.01
+Az_offset = -1.11
+Gx_offset = 0.29
+Gy_offset = 0.07
+Gz_offset = 0.09
+
+def MPU_Init():
+    bus.write_byte_data(Device_Address, SMPLRT_DIV, 7)
+    bus.write_byte_data(Device_Address, PWR_MGMT_1, 1)
+    bus.write_byte_data(Device_Address, CONFIG, 0)
+    bus.write_byte_data(Device_Address, GYRO_CONFIG, 24)
+    bus.write_byte_data(Device_Address, INT_ENABLE, 1)
+
+def read_raw_data(addr):
+    high = bus.read_byte_data(Device_Address, addr)
+    low = bus.read_byte_data(Device_Address, addr + 1)
+    value = (high << 8) | low
+    if value > 32768:
+        value = value - 65536
+    return value
+
+def get_motion_data():
+    acc_x = read_raw_data(ACCEL_XOUT_H)
+    acc_y = read_raw_data(ACCEL_YOUT_H)
+    acc_z = read_raw_data(ACCEL_ZOUT_H)
+    gyro_x = read_raw_data(GYRO_XOUT_H)
+    gyro_y = read_raw_data(GYRO_YOUT_H)
+    gyro_z = read_raw_data(GYRO_ZOUT_H)
+    
+    Ax = acc_x / 16384.0
+    Ay = acc_y / 16384.0
+    Az = acc_z / 16384.0
+    Gx = gyro_x / 131.0
+    Gy = gyro_y / 131.0
+    Gz = gyro_z / 131.0
+    
+    return Ax, Ay, Az, Gx, Gy, Gz
+
+def get_direction_and_acceleration():
+    Ax, Ay, Az, Gx, Gy, Gz = get_motion_data()
+    accel_magnitude = math.sqrt(Ax**2 + Ay**2 + Az**2)
+    
+    # Simple directional estimation using Ax and Ay
+    if Ax > 0.5:
+        direction = "Right"
+    elif Ax < -0.5:
+        direction = "Left"
+    elif Ay > 0.5:
+        direction = "Forward"
+    elif Ay < -0.5:
+        direction = "Backward"
+    else:
+        direction = "Stationary"
+    
+    return direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz
+
+# ========================================
+# Update Lights Collection Function
+# ========================================
 def update_lights(new_light_data, old_light_data):
     """
     new_light_data: list of tuples containing (x1, y1, x2, y2, color, light_conf, color_conf, changed)
@@ -45,6 +129,9 @@ def update_lights(new_light_data, old_light_data):
         
     return old_light_data
 
+# ========================================
+# Main function integrating vision and IMU
+# ========================================
 def main():
     voice = Voice()
 
@@ -72,17 +159,23 @@ def main():
         if not ret:
             break
 
-        # Perform prediction
-        l_results = l_model(frame) # Find the traffic lights in frame
-        # identify if the lights found are green, red, yellow, or some combination
-
+        # ---------------------------------
+        # Get accelerometer data
+        # ---------------------------------
+        direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
+        print(f"Accel -> Direction: {direction}, Accel: {accel_magnitude:.2f}, "
+              f"Ax: {(Ax+Ax_offset):.2f}, Ay: {(Ay+Ay_offset):.2f}, Az: {(Az+Az_offset):.2f}")
+        
         # identify traffic signs in the image
         # s_results = s_model(frame)
 
+        # ---------------------------------
+        # Traffic Lights Detection via YOLO
+        # ---------------------------------
+        l_results = l_model(frame)  # Detect traffic lights
+        annotated_frame = l_results[0].plot()
         identified_lights = []
 
-        # iterate through all the traffic lights found
-        annotated_frame = l_results[0].plot()
         for result in l_results[0].boxes:
             # check confidence
             if result.conf > 0.5:
@@ -114,36 +207,52 @@ def main():
                 color_conf = b_results[0].boxes
                 identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
         
-        print(f"Identified lights: {identified_lights}")
-
+        # Update the lights collection with new detections
+        lights_collection = update_lights(identified_lights, lights_collection)
+        print(f"Updated Lights Collection: {lights_collection}")
         
-        # show the annotated frame
+        # ---------------------------------
+        # Trigger Voice Feedback Based on Analysis
+        # ---------------------------------
+        # If a light has changed to green and the car is stationary, speak "Green"
+        for idx, light in enumerate(lights_collection):
+            if light[7] and light[4].lower() == 'green' and direction == "Stationary":
+                voice.speak("Green")
+                # Reset the changed flag after speaking
+                updated = list(light)
+                updated[7] = False
+                lights_collection[idx] = tuple(updated)
+        
+        # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
+        if direction == "Forward" and accel_magnitude > 1.5:
+            voice.speak("Slow down!")
+
+        # # identify the speed limit in the image
+
+        # # React to the analysis
+
+        # # TTS for the lights
+        # # - If stopped at right light that turns green, say "Green"
+        # if False:
+        #     voice.speak('Green')
+        
+        # # simulate the AI finding two new lights
+        # new_lights = [(0.1,0.1,0.3,0.3,'green',0.9,0.9, False), (0.4,0.4,0.6,0.6,'red',0.9,0.9, False)]
+
+        # # TTS for the speed limit
+        # # - If car exceeds speed limit, say "Slow down!"
+
+
+        # ---------------------------------
+        # Display the annotated frame
+        # ---------------------------------
         cv2.imshow("Annotated Frame", annotated_frame)
         # Exit on 'q' key press
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-                
-                
 
-
-        # identify the speed limit in the image
-
-
-        # React to the analysis
-
-        # TTS for the lights
-        # - If stopped at right light that turns green, say "Green"
-        if False:
-            voice.speak('Green')
-        
-        # simulate the AI finding two new lights
-        new_lights = [(0.1,0.1,0.3,0.3,'green',0.9,0.9, False), (0.4,0.4,0.6,0.6,'red',0.9,0.9, False)]
-
-        
-
-        # TTS for the speed limit
-        # - If car exceeds speed limit, say "Slow down!"
+        sleep(0.1)  # Small delay to ease CPU load
 
         
 
