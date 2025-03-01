@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -69,6 +71,7 @@ class _SessionWidgetState extends State<SessionWidget>
         _cameraController = CameraController(
           value.first,
           ResolutionPreset.medium,
+          
         );
         _initializeControllerFuture = _cameraController.initialize();
         setState(() {});
@@ -122,68 +125,83 @@ class _SessionWidgetState extends State<SessionWidget>
         ),
         body: SafeArea(
           top: true,
-          child: Align(
-            alignment: AlignmentDirectional(0.0, 0.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  width: MediaQuery.sizeOf(context).width * 0.9,
-                  height: MediaQuery.sizeOf(context).height * 0.75,
-                  decoration: BoxDecoration(),
-                  child: Padding(
-                    padding:
-                        EdgeInsetsDirectional.fromSTEB(0.0, 10.0, 0.0, 5.0),
-                    child: FutureBuilder<void>(
-                      future: _initializeControllerFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.done) {
-                          return CameraPreview(_cameraController);
-                        } else {
-                          return Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                      },
+          child: SingleChildScrollView(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Container(
+                    width: MediaQuery.sizeOf(context).width * 1.0,
+                    height: MediaQuery.sizeOf(context).height * 0.75,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20.0),
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 20.0),
-                  child: FFButtonWidget(
-                    onPressed: () async {
-                      if (animationsMap['buttonOnActionTriggerAnimation'] !=
-                          null) {
-                        await animationsMap['buttonOnActionTriggerAnimation']!
-                            .controller
-                            .forward(from: 0.0);
-                      }
-
-                      context.pushNamed(DashboardWidget.routeName);
-                    },
-                    text: 'End Session',
-                    options: FFButtonOptions(
-                      height: 40.0,
+                    child: Padding(
                       padding:
-                          EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 0.0),
-                      iconPadding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
-                      color: Color(0xFFEF393C),
-                      textStyle:
-                          FlutterFlowTheme.of(context).titleSmall.override(
-                                fontFamily: 'Inter Tight',
-                                color: Colors.white,
-                                letterSpacing: 0.0,
-                              ),
-                      elevation: 3.0,
-                      borderRadius: BorderRadius.circular(8.0),
+                          EdgeInsetsDirectional.fromSTEB(0.0, 15.0, 0.0, 15.0),
+                      child: FutureBuilder<void>(
+                        future: (_initializeControllerFuture != null) ? _initializeControllerFuture : Future.value(null),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.done) {
+                            Widget cameraPreview = CameraPreview(_cameraController);
+                            if (Platform.isAndroid) {
+                              cameraPreview = RotatedBox(
+                                quarterTurns: 1,
+                                child: cameraPreview,
+                              );
+                            }
+                            return AspectRatio(
+                              aspectRatio: _cameraController.value.aspectRatio,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20.0),
+                                child: cameraPreview),
+                            );
+                          } else {
+                            return Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                        },
+                      ),
                     ),
-                  ).animateOnActionTrigger(
-                    animationsMap['buttonOnActionTriggerAnimation']!,
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 16.0),
+                    child: FFButtonWidget(
+                      onPressed: () async {
+                        if (animationsMap['buttonOnActionTriggerAnimation'] !=
+                            null) {
+                          await animationsMap['buttonOnActionTriggerAnimation']!
+                              .controller
+                              .forward(from: 0.0);
+                        }
+              
+                        context.pushNamed(DashboardWidget.routeName);
+                      },
+                      text: 'End Session',
+                      options: FFButtonOptions(
+                        height: 40.0,
+                        padding:
+                            EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 0.0),
+                        iconPadding:
+                            EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 16.0),
+                        color: Color(0xFFEF393C),
+                        textStyle:
+                            FlutterFlowTheme.of(context).titleSmall.override(
+                                  fontFamily: 'Inter Tight',
+                                  color: Colors.white,
+                                  letterSpacing: 0.0,
+                                ),
+                        elevation: 3.0,
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                    ).animateOnActionTrigger(
+                      animationsMap['buttonOnActionTriggerAnimation']!,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
