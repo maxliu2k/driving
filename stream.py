@@ -5,8 +5,8 @@ from ultralytics import YOLO
 model = YOLO('bestlights.pt')
 
 # Start video stream
-cap = cv2.VideoCapture(0)
-# cap = cv2.VideoCapture('videos/IMG_1412.MOV')
+# cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture('videos/IMG_1413.MOV')
 
 while cap.isOpened():
     # Read video frame
@@ -20,7 +20,7 @@ while cap.isOpened():
     annotated_frame = results[0].plot()
 
     # Display the frame
-    # cv2.imshow('Model Test', annotated_frame)
+    cv2.imshow('Model Test', annotated_frame)
 
     # Exit on 'q' key press
     if cv2.waitKey(1) & 0xFF == ord('q'):
