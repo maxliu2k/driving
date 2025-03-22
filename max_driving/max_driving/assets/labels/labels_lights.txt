@@ -1,0 +1,7 @@
+stop
+stopLeft
+go
+goLeft
+warning
+warningLeft
+goForward

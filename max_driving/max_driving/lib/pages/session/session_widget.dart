@@ -15,6 +15,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'session_model.dart';
 import 'package:camera/camera.dart';
+import 'package:max_driving/services/processing.dart';
 export 'session_model.dart';
 
 class SessionWidget extends StatefulWidget {
@@ -38,6 +39,9 @@ class _SessionWidgetState extends State<SessionWidget>
   // Camera Variables
   late CameraController _cameraController;
   late Future<void> _initializeControllerFuture;
+
+  // last frame timestamp
+  DateTime? lastFrameTimestamp;
 
   @override
   void initState() {
@@ -71,7 +75,6 @@ class _SessionWidgetState extends State<SessionWidget>
         _cameraController = CameraController(
           value.first,
           ResolutionPreset.medium,
-          
         );
         _initializeControllerFuture = _cameraController.initialize();
         setState(() {});
@@ -141,21 +144,40 @@ class _SessionWidgetState extends State<SessionWidget>
                       padding:
                           EdgeInsetsDirectional.fromSTEB(0.0, 15.0, 0.0, 15.0),
                       child: FutureBuilder<void>(
-                        future: (_initializeControllerFuture != null) ? _initializeControllerFuture : Future.value(null),
+                        future: (_initializeControllerFuture != null)
+                            ? _initializeControllerFuture
+                            : Future.value(null),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.done) {
-                            Widget cameraPreview = CameraPreview(_cameraController);
+                          if (snapshot.connectionState ==
+                              ConnectionState.done) {
+                            Widget cameraPreview =
+                                CameraPreview(_cameraController);
+                            int rotation = 0;
                             if (Platform.isAndroid) {
                               cameraPreview = RotatedBox(
                                 quarterTurns: 1,
                                 child: cameraPreview,
                               );
+                              rotation = 90;
                             }
+
+                            // start image stream to the processing service
+                            _cameraController
+                                .startImageStream((CameraImage image) {
+                                  // only process if the last frame was sent 0.5 seconds or more ago
+                                  if (lastFrameTimestamp != null && DateTime.now().difference(lastFrameTimestamp!) < const Duration(milliseconds: 500)) {
+                                    return;
+                                  }
+
+                              processFrame(image, rotation);
+                              lastFrameTimestamp = DateTime.now();
+                            });
+
                             return AspectRatio(
                               aspectRatio: _cameraController.value.aspectRatio,
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(20.0),
-                                child: cameraPreview),
+                                  borderRadius: BorderRadius.circular(20.0),
+                                  child: cameraPreview),
                             );
                           } else {
                             return Center(
@@ -167,7 +189,8 @@ class _SessionWidgetState extends State<SessionWidget>
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 16.0),
+                    padding:
+                        EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 16.0),
                     child: FFButtonWidget(
                       onPressed: () async {
                         if (animationsMap['buttonOnActionTriggerAnimation'] !=
@@ -176,14 +199,14 @@ class _SessionWidgetState extends State<SessionWidget>
                               .controller
                               .forward(from: 0.0);
                         }
-              
+
                         context.pushNamed(DashboardWidget.routeName);
                       },
                       text: 'End Session',
                       options: FFButtonOptions(
                         height: 40.0,
-                        padding:
-                            EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 0.0),
+                        padding: EdgeInsetsDirectional.fromSTEB(
+                            16.0, 0.0, 16.0, 0.0),
                         iconPadding:
                             EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 16.0),
                         color: Color(0xFFEF393C),
