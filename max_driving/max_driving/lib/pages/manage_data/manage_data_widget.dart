@@ -24,6 +24,8 @@ class _ManageDataWidgetState extends State<ManageDataWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  bool cleanData30 = true;
+
   @override
   void initState() {
     super.initState();
@@ -80,6 +82,8 @@ class _ManageDataWidgetState extends State<ManageDataWidget> {
                 value: _model.switchListTileValue1 ??= true,
                 onChanged: (newValue) async {
                   safeSetState(() => _model.switchListTileValue1 = newValue!);
+
+                  cleanData30 = newValue;
                 },
                 title: Text(
                   'Push Notifications',

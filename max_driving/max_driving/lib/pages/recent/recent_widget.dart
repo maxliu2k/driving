@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'recent_model.dart';
+import 'package:max_driving/singleton.dart';
 export 'recent_model.dart';
 
 class RecentWidget extends StatefulWidget {
@@ -82,6 +83,12 @@ class _RecentWidgetState extends State<RecentWidget> {
             child: Column(
               mainAxisSize: MainAxisSize.max,
               children: [
+                // TODO: remove this later, it's just to showcase consumer
+                Consumer<Data>(
+                  builder: (context, data, child) {
+                    return Text(data.data.toString());
+                  },
+                ),
                 Align(
                   alignment: AlignmentDirectional(0.0, 0.0),
                   child: Padding(
