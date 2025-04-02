@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'manage_data_model.dart';
+import 'package:max_driving/singleton.dart';
 export 'manage_data_model.dart';
 
 class ManageDataWidget extends StatefulWidget {
@@ -20,6 +21,8 @@ class ManageDataWidget extends StatefulWidget {
 }
 
 class _ManageDataWidgetState extends State<ManageDataWidget> {
+  final Data data = Data();
+
   late ManageDataModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -84,6 +87,8 @@ class _ManageDataWidgetState extends State<ManageDataWidget> {
                   safeSetState(() => _model.switchListTileValue1 = newValue!);
 
                   cleanData30 = newValue;
+                  data.data['cleanData30'] = cleanData30;
+                  data.notify();
                 },
                 title: Text(
                   'Push Notifications',
