@@ -189,8 +189,8 @@ class _AlertOptionsWidgetState extends State<AlertOptionsWidget> {
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(0.0, 24.0, 0.0, 0.0),
             child: FFButtonWidget(
-              onPressed: () async {
-                context.pop();
+              onPressed: () {
+                print("Button pressed.");
               },
               text: 'Apply Changes',
               options: FFButtonOptions(
@@ -218,8 +218,8 @@ class _AlertOptionsWidgetState extends State<AlertOptionsWidget> {
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(0.0, 10.0, 0.0, 0.0),
             child: FFButtonWidget(
-              onPressed: () {
-                print('Button pressed ...');
+              onPressed: () async {
+                context.pop();
               },
               text: 'Apply and Exit',
               options: FFButtonOptions(

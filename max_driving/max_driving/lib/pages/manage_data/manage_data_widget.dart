@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'manage_data_model.dart';
-import 'package:max_driving/singleton.dart';
+import 'package:max_driving/services/data.dart';
 export 'manage_data_model.dart';
 
 class ManageDataWidget extends StatefulWidget {
@@ -87,7 +87,7 @@ class _ManageDataWidgetState extends State<ManageDataWidget> {
                   safeSetState(() => _model.switchListTileValue1 = newValue!);
 
                   cleanData30 = newValue;
-                  data.data['cleanData30'] = cleanData30;
+                  data.set('cleanData30', cleanData30);
                   data.notify();
                 },
                 title: Text(
@@ -198,8 +198,8 @@ class _ManageDataWidgetState extends State<ManageDataWidget> {
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(0.0, 24.0, 0.0, 0.0),
             child: FFButtonWidget(
-              onPressed: () async {
-                context.pop();
+              onPressed: () {
+                print('Button pressed ...');
               },
               text: 'Apply Changes',
               options: FFButtonOptions(
@@ -227,8 +227,8 @@ class _ManageDataWidgetState extends State<ManageDataWidget> {
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(0.0, 10.0, 0.0, 0.0),
             child: FFButtonWidget(
-              onPressed: () {
-                print('Button pressed ...');
+              onPressed: () async {
+                context.pop();
               },
               text: 'Apply and Exit',
               options: FFButtonOptions(
