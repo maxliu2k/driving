@@ -2,12 +2,12 @@ from voice import Voice
 import cv2
 from ultralytics import YOLO
 from utils import *
-import smbus
+# import smbus
 from time import sleep
 import math
 
 
-# ===============================
+# =============================== 
 # Accelerometer (MPU6050) Setup
 # ===============================
 # MPU6050 Registers
@@ -94,7 +94,7 @@ def update_lights(new_light_data, old_light_data):
     """
 
     new_lights_to_add = [True for _ in range(len(new_light_data))]
-                      # [action for object in container if condition]
+                      # [action for object in container if condition] 
 
     # check if the center of the light is within the bounds of any of the current lights in the list
     for old_light in old_light_data:
@@ -102,7 +102,7 @@ def update_lights(new_light_data, old_light_data):
         center_x = (old_light[0] + old_light[2]) / 2
         center_y = (old_light[1] + old_light[3]) / 2
 
-        # for light in lights_collection:
+        # for light in lights_collection: 
         #     light[7] = -1
 
         should_remove = True
@@ -137,18 +137,18 @@ def main():
 
     # Load YOLO model
     l_model = YOLO('bestlights.pt')
-    # s_model = YOLO('bestsigns.pt')
+    # s_model = YOLO('bestsigns.pt') 
     b_model = YOLO('bestbulbs.pt')
 
     # Start video stream
     cap = cv2.VideoCapture(0)
 
-    # alternatively, use a video file
+    # alternatively, use a video file 
     #cap = cv2.VideoCapture('videos/IMG_1412.MOV')
 
     voice.speak("Recording started!")
 
-    # (x1,y1,x2,y2,color,light_conf,color_conf)
+    # (x1,y1,x2,y2,color,light_conf,color_conf) 
     left_turn_signals = [(0.2,0.2,0.4,0.4,'green',0.9,0.9)] # Example data
     right_turn_signals = [(0.5,0.5,0.7,0.7,'red',0.9,0.9)] # Example data
     forward_signals = [(0.8,0.8,1.0,1.0,'yellow',0.9,0.9)] # Example data
@@ -167,7 +167,7 @@ def main():
               f"Ax: {(Ax+Ax_offset):.2f}, Ay: {(Ay+Ay_offset):.2f}, Az: {(Az+Az_offset):.2f}")
         
         # identify traffic signs in the image
-        # s_results = s_model(frame)
+        # s_results = s_model(frame) 
 
         # ---------------------------------
         # Traffic Lights Detection via YOLO
@@ -191,7 +191,7 @@ def main():
                 cropped_frame = crop_image(frame, (x, y, w, h))
 
                 # for debugging, save the cropped image as a file
-                # cv2.imwrite("cropped.jpg", cropped_frame)
+                # cv2.imwrite("cropped.jpg", cropped_frame) 
 
                 # also save the original frame annotated with the bounding box
                 # cv2.imwrite("annotated.jpg", annotated_frame)
@@ -208,8 +208,9 @@ def main():
                 identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
         
         # Update the lights collection with new detections
-        lights_collection = update_lights(identified_lights, lights_collection)
-        print(f"Updated Lights Collection: {lights_collection}")
+        # lights_collection = update_lights(identified_lights, lights_collection) 
+        # print(f"Updated Lights Collection: {lights_collection}") 
+        lights_collection = identified_lights
         
         # ---------------------------------
         # Trigger Voice Feedback Based on Analysis
@@ -234,7 +235,7 @@ def main():
         # # TTS for the lights
         # # - If stopped at right light that turns green, say "Green"
         # if False:
-        #     voice.speak('Green')
+        #     voice.speak('Green') 
         
         # # simulate the AI finding two new lights
         # new_lights = [(0.1,0.1,0.3,0.3,'green',0.9,0.9, False), (0.4,0.4,0.6,0.6,'red',0.9,0.9, False)]
