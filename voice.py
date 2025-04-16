@@ -51,9 +51,13 @@ class Voice:
         buf.seek(0)
         # aplay can also read from stdin if you pass "-" as filename:
         subprocess.run(["aplay", "-"], input=buf.read(), check=True)
+    
+    def speak(self, text: str):
+        """Default speak() calls file‑based playback."""
+        self.speak_to_file(text)
 
 if __name__ == "__main__":
-    v = Voice("en_US-lessac-medium.onnx")
+    v = Voice("piper.onnx")
     v.speak_to_file("Hello from your Raspberry Pi!")
     # or
     # v.speak_raw("Streaming from memory!")
