@@ -133,7 +133,7 @@ def update_lights(new_light_data, old_light_data):
 # Main function integrating vision and IMU
 # ========================================
 def main():
-    voice = Voice()
+    # voice = Voice()
 
     # Load YOLO model
     l_model = YOLO('bestlights.pt')
