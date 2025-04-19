@@ -72,119 +72,122 @@ class _AlertOptionsWidgetState extends State<AlertOptionsWidget> {
       body: Column(
         mainAxisSize: MainAxisSize.max,
         children: [
-          Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(0.0, 12.0, 0.0, 0.0),
-            child: Material(
-              color: Colors.transparent,
-              child: SwitchListTile.adaptive(
-                value: _model.switchListTileValue1 ??= true,
-                onChanged: (newValue) async {
-                  safeSetState(() => _model.switchListTileValue1 = newValue!);
-                },
-                title: Text(
-                  'Push Notifications',
-                  style: FlutterFlowTheme.of(context).bodyLarge.override(
-                        fontFamily: 'Plus Jakarta Sans',
-                        color: Color(0xFF14181B),
-                        fontSize: 16.0,
-                        letterSpacing: 0.0,
-                        fontWeight: FontWeight.normal,
-                        lineHeight: 2.0,
-                      ),
-                ),
-                subtitle: Text(
-                  'Receive Push notifications from our application on a semi regular basis.',
-                  style: FlutterFlowTheme.of(context).bodyMedium.override(
-                        fontFamily: 'Plus Jakarta Sans',
-                        color: Color(0xFF8B97A2),
-                        fontSize: 14.0,
-                        letterSpacing: 0.0,
-                        fontWeight: FontWeight.normal,
-                      ),
-                ),
-                tileColor: Colors.white,
-                activeColor: Color(0xFF4B39EF),
-                activeTrackColor: Color(0x4C4B39EF),
-                dense: false,
-                controlAffinity: ListTileControlAffinity.trailing,
-                contentPadding:
-                    EdgeInsetsDirectional.fromSTEB(24.0, 12.0, 24.0, 12.0),
-              ),
-            ),
-          ),
-          Material(
-            color: Colors.transparent,
-            child: SwitchListTile.adaptive(
-              value: _model.switchListTileValue2 ??= true,
-              onChanged: (newValue) async {
-                safeSetState(() => _model.switchListTileValue2 = newValue!);
-              },
-              title: Text(
-                'Email Notifications',
-                style: FlutterFlowTheme.of(context).bodyLarge.override(
-                      fontFamily: 'Plus Jakarta Sans',
-                      color: Color(0xFF14181B),
-                      fontSize: 16.0,
-                      letterSpacing: 0.0,
-                      fontWeight: FontWeight.normal,
-                      lineHeight: 2.0,
-                    ),
-              ),
-              subtitle: Text(
-                'Receive email notifications from our marketing team about new features.',
-                style: FlutterFlowTheme.of(context).bodyMedium.override(
-                      fontFamily: 'Plus Jakarta Sans',
-                      color: Color(0xFF8B97A2),
-                      fontSize: 14.0,
-                      letterSpacing: 0.0,
-                      fontWeight: FontWeight.normal,
-                    ),
-              ),
-              tileColor: Colors.white,
-              activeColor: Color(0xFF4B39EF),
-              activeTrackColor: Color(0x4C4B39EF),
-              dense: false,
-              controlAffinity: ListTileControlAffinity.trailing,
-              contentPadding:
-                  EdgeInsetsDirectional.fromSTEB(24.0, 12.0, 24.0, 12.0),
-            ),
-          ),
-          Material(
-            color: Colors.transparent,
-            child: SwitchListTile.adaptive(
-              value: _model.switchListTileValue3 ??= true,
-              onChanged: (newValue) async {
-                safeSetState(() => _model.switchListTileValue3 = newValue!);
-              },
-              title: Text(
-                'Location Services',
-                style: FlutterFlowTheme.of(context).bodyLarge.override(
-                      fontFamily: 'Plus Jakarta Sans',
-                      color: Color(0xFF14181B),
-                      fontSize: 16.0,
-                      letterSpacing: 0.0,
-                      fontWeight: FontWeight.normal,
-                      lineHeight: 2.0,
-                    ),
-              ),
-              subtitle: Text(
-                'Allow us to track your location, this helps keep track of spending and keeps you safe.',
-                style: FlutterFlowTheme.of(context).bodyMedium.override(
-                      fontFamily: 'Plus Jakarta Sans',
-                      color: Color(0xFF8B97A2),
-                      fontSize: 14.0,
-                      letterSpacing: 0.0,
-                      fontWeight: FontWeight.normal,
-                    ),
-              ),
-              tileColor: Colors.white,
-              activeColor: Color(0xFF4B39EF),
-              activeTrackColor: Color(0x4C4B39EF),
-              dense: false,
-              controlAffinity: ListTileControlAffinity.trailing,
-              contentPadding:
-                  EdgeInsetsDirectional.fromSTEB(24.0, 12.0, 24.0, 12.0),
-            ),
+          // Padding(
+          //   padding: EdgeInsetsDirectional.fromSTEB(0.0, 12.0, 0.0, 0.0),
+          //   child: Material(
+          //     color: Colors.transparent,
+          //     child: SwitchListTile.adaptive(
+          //       value: _model.switchListTileValue1 ??= true,
+          //       onChanged: (newValue) async {
+          //         safeSetState(() => _model.switchListTileValue1 = newValue!);
+          //       },
+          //       title: Text(
+          //         'Push Notifications',
+          //         style: FlutterFlowTheme.of(context).bodyLarge.override(
+          //               fontFamily: 'Plus Jakarta Sans',
+          //               color: Color(0xFF14181B),
+          //               fontSize: 16.0,
+          //               letterSpacing: 0.0,
+          //               fontWeight: FontWeight.normal,
+          //               lineHeight: 2.0,
+          //             ),
+          //       ),
+          //       subtitle: Text(
+          //         'Receive Push notifications from our application on a semi regular basis.',
+          //         style: FlutterFlowTheme.of(context).bodyMedium.override(
+          //               fontFamily: 'Plus Jakarta Sans',
+          //               color: Color(0xFF8B97A2),
+          //               fontSize: 14.0,
+          //               letterSpacing: 0.0,
+          //               fontWeight: FontWeight.normal,
+          //             ),
+          //       ),
+          //       tileColor: Colors.white,
+          //       activeColor: Color(0xFF4B39EF),
+          //       activeTrackColor: Color(0x4C4B39EF),
+          //       dense: false,
+          //       controlAffinity: ListTileControlAffinity.trailing,
+          //       contentPadding:
+          //           EdgeInsetsDirectional.fromSTEB(24.0, 12.0, 24.0, 12.0),
+          //     ),
+          //   ),
+          // ),
+          // Material(
+          //   color: Colors.transparent,
+          //   child: SwitchListTile.adaptive(
+          //     value: _model.switchListTileValue2 ??= true,
+          //     onChanged: (newValue) async {
+          //       safeSetState(() => _model.switchListTileValue2 = newValue!);
+          //     },
+          //     title: Text(
+          //       'Email Notifications',
+          //       style: FlutterFlowTheme.of(context).bodyLarge.override(
+          //             fontFamily: 'Plus Jakarta Sans',
+          //             color: Color(0xFF14181B),
+          //             fontSize: 16.0,
+          //             letterSpacing: 0.0,
+          //             fontWeight: FontWeight.normal,
+          //             lineHeight: 2.0,
+          //           ),
+          //     ),
+          //     subtitle: Text(
+          //       'Receive email notifications from our marketing team about new features.',
+          //       style: FlutterFlowTheme.of(context).bodyMedium.override(
+          //             fontFamily: 'Plus Jakarta Sans',
+          //             color: Color(0xFF8B97A2),
+          //             fontSize: 14.0,
+          //             letterSpacing: 0.0,
+          //             fontWeight: FontWeight.normal,
+          //           ),
+          //     ),
+          //     tileColor: Colors.white,
+          //     activeColor: Color(0xFF4B39EF),
+          //     activeTrackColor: Color(0x4C4B39EF),
+          //     dense: false,
+          //     controlAffinity: ListTileControlAffinity.trailing,
+          //     contentPadding:
+          //         EdgeInsetsDirectional.fromSTEB(24.0, 12.0, 24.0, 12.0),
+          //   ),
+          // ),
+          // Material(
+          //   color: Colors.transparent,
+          //   child: SwitchListTile.adaptive(
+          //     value: _model.switchListTileValue3 ??= true,
+          //     onChanged: (newValue) async {
+          //       safeSetState(() => _model.switchListTileValue3 = newValue!);
+          //     },
+          //     title: Text(
+          //       'Location Services',
+          //       style: FlutterFlowTheme.of(context).bodyLarge.override(
+          //             fontFamily: 'Plus Jakarta Sans',
+          //             color: Color(0xFF14181B),
+          //             fontSize: 16.0,
+          //             letterSpacing: 0.0,
+          //             fontWeight: FontWeight.normal,
+          //             lineHeight: 2.0,
+          //           ),
+          //     ),
+          //     subtitle: Text(
+          //       'Allow us to track your location, this helps keep track of spending and keeps you safe.',
+          //       style: FlutterFlowTheme.of(context).bodyMedium.override(
+          //             fontFamily: 'Plus Jakarta Sans',
+          //             color: Color(0xFF8B97A2),
+          //             fontSize: 14.0,
+          //             letterSpacing: 0.0,
+          //             fontWeight: FontWeight.normal,
+          //           ),
+          //     ),
+          //     tileColor: Colors.white,
+          //     activeColor: Color(0xFF4B39EF),
+          //     activeTrackColor: Color(0x4C4B39EF),
+          //     dense: false,
+          //     controlAffinity: ListTileControlAffinity.trailing,
+          //     contentPadding:
+          //         EdgeInsetsDirectional.fromSTEB(24.0, 12.0, 24.0, 12.0),
+          //   ),
+          // ),
+          SizedBox(
+            width: double.infinity,
           ),
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(0.0, 24.0, 0.0, 0.0),

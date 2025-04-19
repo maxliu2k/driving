@@ -27,6 +27,46 @@ class _RecentWidgetState extends State<RecentWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // Score Data
+  List<dynamic> scoreXData = List.generate(
+    5,
+    (index) => 0,
+  );
+  List<dynamic> scoreYData = List.generate(
+    5,
+    (index) => 0,
+  );
+
+  // Violations Data
+  List<dynamic> violationsXData = List.generate(
+    5,
+    (index) => 0,
+  );
+  List<dynamic> violationsYData = List.generate(
+    5,
+    (index) => 0,
+  );
+
+  // Stop Signs Data
+  List<dynamic> stopSignsXData = List.generate(
+    5,
+    (index) => 0,
+  );
+  List<dynamic> stopSignsYData = List.generate(
+    5,
+    (index) => 0,
+  );
+
+  // Yellow Lights Data
+  List<dynamic> yellowLightsXData = List.generate(
+    5,
+    (index) => 0,
+  );
+  List<dynamic> yellowLightsYData = List.generate(
+    5,
+    (index) => 0,
+  );
+
   @override
   void initState() {
     super.initState();
@@ -323,14 +363,8 @@ class _RecentWidgetState extends State<RecentWidget> {
                                       child: FlutterFlowLineChart(
                                         data: [
                                           FFLineChartData(
-                                            xData: List.generate(
-                                                random_data.randomInteger(5, 5),
-                                                (index) => random_data
-                                                    .randomInteger(0, 10)),
-                                            yData: List.generate(
-                                                random_data.randomInteger(5, 5),
-                                                (index) => random_data
-                                                    .randomInteger(0, 10)),
+                                            xData: scoreXData,
+                                            yData: scoreYData,
                                             settings: LineChartBarData(
                                               color: Color(0xFF4B39EF),
                                               barWidth: 2.0,
@@ -410,14 +444,8 @@ class _RecentWidgetState extends State<RecentWidget> {
                                       child: FlutterFlowLineChart(
                                         data: [
                                           FFLineChartData(
-                                            xData: List.generate(
-                                                random_data.randomInteger(5, 5),
-                                                (index) => random_data
-                                                    .randomInteger(0, 10)),
-                                            yData: List.generate(
-                                                random_data.randomInteger(5, 5),
-                                                (index) => random_data
-                                                    .randomInteger(0, 10)),
+                                            xData: violationsXData,
+                                            yData: violationsYData,
                                             settings: LineChartBarData(
                                               color: Color(0xFF4B39EF),
                                               barWidth: 2.0,
@@ -497,16 +525,8 @@ class _RecentWidgetState extends State<RecentWidget> {
                                           child: FlutterFlowLineChart(
                                             data: [
                                               FFLineChartData(
-                                                xData: List.generate(
-                                                    random_data.randomInteger(
-                                                        5, 5),
-                                                    (index) => random_data
-                                                        .randomInteger(0, 10)),
-                                                yData: List.generate(
-                                                    random_data.randomInteger(
-                                                        5, 5),
-                                                    (index) => random_data
-                                                        .randomInteger(0, 10)),
+                                                xData: stopSignsXData,
+                                                yData: stopSignsYData,
                                                 settings: LineChartBarData(
                                                   color: Color(0xFF4B39EF),
                                                   barWidth: 2.0,
@@ -596,14 +616,8 @@ class _RecentWidgetState extends State<RecentWidget> {
                                       child: FlutterFlowLineChart(
                                         data: [
                                           FFLineChartData(
-                                            xData: List.generate(
-                                                random_data.randomInteger(5, 5),
-                                                (index) => random_data
-                                                    .randomInteger(0, 10)),
-                                            yData: List.generate(
-                                                random_data.randomInteger(5, 5),
-                                                (index) => random_data
-                                                    .randomInteger(0, 10)),
+                                            xData: yellowLightsXData,
+                                            yData: yellowLightsYData,
                                             settings: LineChartBarData(
                                               color: Color(0xFF4B39EF),
                                               barWidth: 2.0,
@@ -674,71 +688,71 @@ class _RecentWidgetState extends State<RecentWidget> {
                                       ),
                                     ),
                                   ),
-                                  Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
-                                        16.0, 0.0, 16.0, 0.0),
-                                    child: Container(
-                                      width: double.infinity,
-                                      height: 200.0,
-                                      child: FlutterFlowLineChart(
-                                        data: [
-                                          FFLineChartData(
-                                            xData: List.generate(
-                                                random_data.randomInteger(5, 5),
-                                                (index) => random_data
-                                                    .randomInteger(0, 10)),
-                                            yData: List.generate(
-                                                random_data.randomInteger(5, 5),
-                                                (index) => random_data
-                                                    .randomInteger(0, 10)),
-                                            settings: LineChartBarData(
-                                              color: Color(0xFF4B39EF),
-                                              barWidth: 2.0,
-                                              isCurved: true,
-                                              preventCurveOverShooting: true,
-                                              dotData: FlDotData(show: false),
-                                              belowBarData: BarAreaData(
-                                                show: true,
-                                                color: Color(0x4C4B39EF),
-                                              ),
-                                            ),
-                                          )
-                                        ],
-                                        chartStylingInfo: ChartStylingInfo(
-                                          enableTooltip: true,
-                                          backgroundColor: Colors.white,
-                                          showBorder: false,
-                                        ),
-                                        axisBounds: AxisBounds(),
-                                        xAxisLabelInfo: AxisLabelInfo(
-                                          title: 'Last x Days',
-                                          titleTextStyle: FlutterFlowTheme.of(
-                                                  context)
-                                              .bodyMedium
-                                              .override(
-                                                fontFamily: 'Plus Jakarta Sans',
-                                                color: Color(0xFF14181B),
-                                                fontSize: 14.0,
-                                                letterSpacing: 0.0,
-                                                fontWeight: FontWeight.normal,
-                                              ),
-                                        ),
-                                        yAxisLabelInfo: AxisLabelInfo(
-                                          title: 'Score',
-                                          titleTextStyle: FlutterFlowTheme.of(
-                                                  context)
-                                              .bodyMedium
-                                              .override(
-                                                fontFamily: 'Plus Jakarta Sans',
-                                                color: Color(0xFF14181B),
-                                                fontSize: 14.0,
-                                                letterSpacing: 0.0,
-                                                fontWeight: FontWeight.normal,
-                                              ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                  // Padding(
+                                  //   padding: EdgeInsetsDirectional.fromSTEB(
+                                  //       16.0, 0.0, 16.0, 0.0),
+                                  //   child: Container(
+                                  //     width: double.infinity,
+                                  //     height: 200.0,
+                                  //     child: FlutterFlowLineChart(
+                                  //       data: [
+                                  //         FFLineChartData(
+                                  //           xData: List.generate(
+                                  //               random_data.randomInteger(5, 5),
+                                  //               (index) => random_data
+                                  //                   .randomInteger(0, 10)),
+                                  //           yData: List.generate(
+                                  //               random_data.randomInteger(5, 5),
+                                  //               (index) => random_data
+                                  //                   .randomInteger(0, 10)),
+                                  //           settings: LineChartBarData(
+                                  //             color: Color(0xFF4B39EF),
+                                  //             barWidth: 2.0,
+                                  //             isCurved: true,
+                                  //             preventCurveOverShooting: true,
+                                  //             dotData: FlDotData(show: false),
+                                  //             belowBarData: BarAreaData(
+                                  //               show: true,
+                                  //               color: Color(0x4C4B39EF),
+                                  //             ),
+                                  //           ),
+                                  //         )
+                                  //       ],
+                                  //       chartStylingInfo: ChartStylingInfo(
+                                  //         enableTooltip: true,
+                                  //         backgroundColor: Colors.white,
+                                  //         showBorder: false,
+                                  //       ),
+                                  //       axisBounds: AxisBounds(),
+                                  //       xAxisLabelInfo: AxisLabelInfo(
+                                  //         title: 'Last x Days',
+                                  //         titleTextStyle: FlutterFlowTheme.of(
+                                  //                 context)
+                                  //             .bodyMedium
+                                  //             .override(
+                                  //               fontFamily: 'Plus Jakarta Sans',
+                                  //               color: Color(0xFF14181B),
+                                  //               fontSize: 14.0,
+                                  //               letterSpacing: 0.0,
+                                  //               fontWeight: FontWeight.normal,
+                                  //             ),
+                                  //       ),
+                                  //       yAxisLabelInfo: AxisLabelInfo(
+                                  //         title: 'Score',
+                                  //         titleTextStyle: FlutterFlowTheme.of(
+                                  //                 context)
+                                  //             .bodyMedium
+                                  //             .override(
+                                  //               fontFamily: 'Plus Jakarta Sans',
+                                  //               color: Color(0xFF14181B),
+                                  //               fontSize: 14.0,
+                                  //               letterSpacing: 0.0,
+                                  //               fontWeight: FontWeight.normal,
+                                  //             ),
+                                  //       ),
+                                  //     ),
+                                  //   ),
+                                  // ),
                                 ],
                               ),
                             ],
