@@ -228,7 +228,7 @@ def main():
                     # updated = list(light)
                     # updated[7] = False
                     # lights_collection[idx] = tuple(updated)
-                if (light[4].lower() == "stop" or light[4].lower() == "STOP"):
+                if (light[4].lower() == "stop"):
                     red = True
             if (red and not temp):
                 voice.speak("red light detected")
@@ -266,9 +266,7 @@ def main():
                 break
 
 
-        sleep(0.1)  # Small delay to ease CPU load
-
-        
+            sleep(0.1)  # Small delay to ease CPU load
 
     cap.release()
     cv2.destroyAllWindows()
