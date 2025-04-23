@@ -140,10 +140,10 @@ def main():
     b_model = YOLO('bestbulbs.pt')
 
     # Start video stream
-    cap = cv2.VideoCapture(0)
+    # cap = cv2.VideoCapture(0)
 
     # alternatively, use a video file 
-    # cap = cv2.VideoCapture('videos/IMG_1412.MOV')
+    cap = cv2.VideoCapture('videoTest/IMG_1409.MOV')
 
     voice.speak("Recording started!")
 
