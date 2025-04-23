@@ -212,10 +212,9 @@ def main():
                     light_conf = result.conf
                     color_conf = b_results[0].boxes
                     identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
-                    print(color + "===================================================")
-                    print(color)
-                    print(color)
+                    print(b_results[0].names + "===================================================")
                     # print(color_conf)
+                    cv2.imshow("Bulb Frame", b_results[0].plot())
             
             # Update the lights collection with new detections
             # lights_collection = update_lights(identified_lights, lights_collection) 
