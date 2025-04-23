@@ -33,6 +33,16 @@ class _DashboardWidgetState extends State<DashboardWidget>
 
   final animationsMap = <String, AnimationInfo>{};
 
+  // Line Chart Data Initialization
+  List<dynamic> xData = List.generate(
+    5,
+    (index) => 0,
+  );
+  List<dynamic> yData = List.generate(
+    5,
+    (index) => 0,
+  );
+
   @override
   void initState() {
     super.initState();
@@ -661,14 +671,8 @@ class _DashboardWidgetState extends State<DashboardWidget>
                               child: FlutterFlowLineChart(
                                 data: [
                                   FFLineChartData(
-                                    xData: List.generate(
-                                        random_data.randomInteger(5, 5),
-                                        (index) =>
-                                            random_data.randomInteger(0, 10)),
-                                    yData: List.generate(
-                                        random_data.randomInteger(5, 5),
-                                        (index) =>
-                                            random_data.randomInteger(0, 10)),
+                                    xData: xData,
+                                    yData: yData,
                                     settings: LineChartBarData(
                                       color: Color(0xFF4B39EF),
                                       barWidth: 2.0,

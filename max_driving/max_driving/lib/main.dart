@@ -71,6 +71,7 @@ class _MyAppState extends State<MyApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [Locale('en', '')],
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.light,
         useMaterial3: false,
@@ -238,19 +239,19 @@ class _NavBarPageState extends State<NavBarPage> {
         body: Row(children: [
           SafeArea(
             child: SideMenu(
-            controller: sideMenuController,
-            style: SideMenuStyle(
-              displayMode: SideMenuDisplayMode.compact,
-              itemBorderRadius: const BorderRadius.all(Radius.circular(50)),
-              backgroundColor: Colors.white,
-              iconSize: 24,
-              itemOuterPadding: EdgeInsets.symmetric(horizontal: 5, vertical: 25)
-            ),
-            items: sidebarItems,
+              controller: sideMenuController,
+              style: SideMenuStyle(
+                  displayMode: SideMenuDisplayMode.compact,
+                  itemBorderRadius: const BorderRadius.all(Radius.circular(50)),
+                  backgroundColor: Colors.white,
+                  iconSize: 24,
+                  itemOuterPadding:
+                      EdgeInsets.symmetric(horizontal: 5, vertical: 25)),
+              items: sidebarItems,
             ),
           ),
           Expanded(child: _currentPage ?? tabs[_currentPageName] as Widget),
-          ]),
+        ]),
       );
     }
   }
