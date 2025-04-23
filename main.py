@@ -212,7 +212,7 @@ def main():
                     light_conf = result.conf
                     color_conf = b_results[0].boxes
                     identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
-                    print(b_results[0].names + "===================================================")
+                    print(str(b_results[0].names) + "===================================================")
                     # print(color_conf)
                     cv2.imshow("Bulb Frame", b_results[0].plot())
             
