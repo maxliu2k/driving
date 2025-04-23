@@ -5,7 +5,6 @@ from utils import *
 import smbus
 from time import sleep
 import math
-import time
 
 # =============================== 
 # Accelerometer (MPU6050) Setup
@@ -154,7 +153,6 @@ def main():
     forward_signals = [(0.8,0.8,1.0,1.0,'yellow',0.9,0.9)] # Example data
 
     while cap.isOpened():
-        time.sleep(1)
         # Read video frame
         ret, frame = cap.read()
         if not ret:
