@@ -152,6 +152,8 @@ def main():
     right_turn_signals = [(0.5,0.5,0.7,0.7,'red',0.9,0.9)] # Example data
     forward_signals = [(0.8,0.8,1.0,1.0,'yellow',0.9,0.9)] # Example data
 
+    red = False
+
     while cap.isOpened():
         count += 1
         # Read video frame
@@ -218,7 +220,7 @@ def main():
         # Trigger Voice Feedback Based on Analysis
         # ---------------------------------
         if (count % 5 == 0):
-            voice.speak(str(len(lights_collection)))
+            temp = red;
             for idx, light in enumerate(lights_collection):
                 # if light[7] and light[4].lower() == 'green' and direction == "Stationary":
                     # voice.speak("Green")
@@ -226,7 +228,12 @@ def main():
                     # updated = list(light)
                     # updated[7] = False
                     # lights_collection[idx] = tuple(updated)
-                voice.speak(light[4].lower())
+                if (light[4].lower() == "stop" or light[4].lower() == "STOP"):
+                    red = True
+            if (red and not temp):
+                voice.speak("red light detected")
+            elif (not red and temp):
+                voice.speak("red light no longer detected")
             
             # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
             # if direction == "Forward" and accel_magnitude > 1.5:
