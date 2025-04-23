@@ -147,7 +147,7 @@ def main():
     # cap = cv2.VideoCapture(0)
 
     # alternatively, use a video file 
-    cap = cv2.VideoCapture('videoTest/IMG_1409.MOV')
+    cap = cv2.VideoCapture('videoTest/IMG_1411.MOV')
 
     voice.speak("Recording started!")
 
@@ -236,10 +236,10 @@ def main():
                     red = True
             if (red and not temp):
                 speak_async(voice, "red light detected")
-            elif (red and temp):
-                speak_async(voice, "red light still detected")
+            # elif (red and temp):
+            #     speak_async(voice, "red light still detected")
             elif (not red and temp):
-                speak_async(voice, "red light no longerdetected")
+                speak_async(voice, "red light no longer detected")
             
             # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
             # if direction == "Forward" and accel_magnitude > 1.5:
@@ -269,8 +269,7 @@ def main():
             # if cv2.waitKey(1) & 0xFF == ord('q'):
             #     break
             if (count % 5 == 0):
-            	sleep(0.17)  # Small delay to ease CPU load
-
+                sleep(0.17)  # Small delay to ease CPU load
     cap.release()
     cv2.destroyAllWindows()
 
