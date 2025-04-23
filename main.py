@@ -144,7 +144,7 @@ def main():
     cap = cv2.VideoCapture(0)
 
     # alternatively, use a video file 
-    #cap = cv2.VideoCapture('videos/IMG_1412.MOV')
+    # cap = cv2.VideoCapture('videos/IMG_1412.MOV')
 
     voice.speak("Recording started!")
 
@@ -217,16 +217,18 @@ def main():
         # ---------------------------------
         # If a light has changed to green and the car is stationary, speak "Green"
         for idx, light in enumerate(lights_collection):
-            if light[7] and light[4].lower() == 'green' and direction == "Stationary":
-                voice.speak("Green")
-                # Reset the changed flag after speaking
-                updated = list(light)
-                updated[7] = False
-                lights_collection[idx] = tuple(updated)
+             # if light[7] and light[4].lower() == 'green' and direction == "Stationary":
+                # voice.speak("Green")
+                # # Reset the changed flag after speaking
+                # updated = list(light)
+                # updated[7] = False
+                # lights_collection[idx] = tuple(updated)
+            if (light[4].lower() == "red"):
+                voice.speak("Red light detected")
         
         # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
-        if direction == "Forward" and accel_magnitude > 1.5:
-            voice.speak("Slow down!")
+        # if direction == "Forward" and accel_magnitude > 1.5:
+        #     voice.speak("Slow down!")
 
         # # identify the speed limit in the image
 
