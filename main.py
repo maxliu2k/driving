@@ -194,7 +194,7 @@ def main():
 
 
                     # crop the image to the traffic light
-                    cropped_frame = crop_image(frame, (x, y, w, h))
+                    cropped_frame = crop_image(frame, (x - w/2, y - h/2, w, h))
 
                     # for debugging, save the cropped image as a file
                     # cv2.imwrite("cropped.jpg", cropped_frame) 
