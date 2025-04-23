@@ -5,7 +5,7 @@ from utils import *
 import smbus
 from time import sleep
 import math
-
+import time
 
 # =============================== 
 # Accelerometer (MPU6050) Setup
@@ -154,6 +154,7 @@ def main():
     forward_signals = [(0.8,0.8,1.0,1.0,'yellow',0.9,0.9)] # Example data
 
     while cap.isOpened():
+        time.sleep(1)
         # Read video frame
         ret, frame = cap.read()
         if not ret:
@@ -218,8 +219,9 @@ def main():
         # Trigger Voice Feedback Based on Analysis
         # ---------------------------------
         # If a light has changed to green and the car is stationary, speak "Green"
+        voice.speak(len(lights_collection))
         for idx, light in enumerate(lights_collection):
-             # if light[7] and light[4].lower() == 'green' and direction == "Stationary":
+            # if light[7] and light[4].lower() == 'green' and direction == "Stationary":
                 # voice.speak("Green")
                 # # Reset the changed flag after speaking
                 # updated = list(light)
