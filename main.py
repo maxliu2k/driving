@@ -179,7 +179,7 @@ def main():
             # Traffic Lights Detection via YOLO
             # ---------------------------------
             l_results = l_model(frame)  # Detect traffic lights
-            annotated_frame = l_results[0].plot()
+            # annotated_frame = l_results[0].plot()
             identified_lights = []
 
             for result in l_results[0].boxes:
@@ -264,12 +264,12 @@ def main():
             # ---------------------------------
             # Display the annotated frame
             # ---------------------------------
-            cv2.imshow("Annotated Frame", annotated_frame)
-            # Exit on 'q' key press
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-            sleep(0.1)  # Small delay to ease CPU load
+            # cv2.imshow("Annotated Frame", annotated_frame)
+            # # Exit on 'q' key press
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     break
+            if (count % 5 == 0):
+            	sleep(0.17)  # Small delay to ease CPU load
 
     cap.release()
     cv2.destroyAllWindows()
