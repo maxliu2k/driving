@@ -220,7 +220,7 @@ def main():
         # Trigger Voice Feedback Based on Analysis
         # ---------------------------------
         if (count % 5 == 0):
-            temp = red;
+            temp = red
             for idx, light in enumerate(lights_collection):
                 # if light[7] and light[4].lower() == 'green' and direction == "Stationary":
                     # voice.speak("Green")
@@ -232,6 +232,8 @@ def main():
                     red = True
             if (red and not temp):
                 voice.speak("red light detected")
+            elif (red and temp):
+                voice.speak("red light still detected")
             elif (not red and temp):
                 voice.speak("red light no longer detected")
             
