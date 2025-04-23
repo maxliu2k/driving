@@ -219,7 +219,7 @@ def main():
         # Trigger Voice Feedback Based on Analysis
         # ---------------------------------
         # If a light has changed to green and the car is stationary, speak "Green"
-        voice.speak(len(lights_collection))
+        voice.speak(str(len(lights_collection)))
         for idx, light in enumerate(lights_collection):
             # if light[7] and light[4].lower() == 'green' and direction == "Stationary":
                 # voice.speak("Green")
