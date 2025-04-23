@@ -215,6 +215,11 @@ def main():
                     print(str(b_results[0].names) + "===================================================")
                     # print(color_conf)
                     cv2.imshow("Bulb Frame", b_results[0].plot())
+
+                    # Save some of the bulb frame images into a data folder
+                    cv2.imwrite(f"data/bulb_{count}.jpg", b_results[0].plot())
+                    print(f"Detected light: {color} with confidence {light_conf:.2f}")
+
             
             # Update the lights collection with new detections
             # lights_collection = update_lights(identified_lights, lights_collection) 

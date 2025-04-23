@@ -48,9 +48,9 @@
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Camera access is required to capture photos and videos.</string>
+	<string>Camera access is required to capture a video feed for the local AI models to analyze.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Microphone access is required to record audio.</string>
+	<string>Microphone access is required to detect audio cues like turn signals.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Location access is required to provide location-based features.</string>
 	<key>UISupportedInterfaceOrientations</key>
