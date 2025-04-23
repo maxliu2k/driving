@@ -169,8 +169,8 @@ def main():
             # Get accelerometer data
             # ---------------------------------
             direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
-            print(f"Accel -> Direction: {direction}, Accel: {accel_magnitude:.2f}, "
-                f"Ax: {(Ax+Ax_offset):.2f}, Ay: {(Ay+Ay_offset):.2f}, Az: {(Az+Az_offset):.2f}")
+            # print(f"Accel -> Direction: {direction}, Accel: {accel_magnitude:.2f}, "
+            #     f"Ax: {(Ax+Ax_offset):.2f}, Ay: {(Ay+Ay_offset):.2f}, Az: {(Az+Az_offset):.2f}")
             
             # identify traffic signs in the image
             # s_results = s_model(frame) 
@@ -185,7 +185,7 @@ def main():
             for result in l_results[0].boxes:
                 # check confidence
                 if result.conf > 0.5:
-                    print(result)
+                    # print(result)
 
                     # extract the bounding box coordinates
                     x, y, w, h = result.xywh[0]
