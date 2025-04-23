@@ -133,7 +133,7 @@ def update_lights(new_light_data, old_light_data):
 # ========================================
 def main():
     voice = Voice("piper.onnx")
-
+    count = 0
     # Load YOLO model
     l_model = YOLO('bestlights.pt')
     # s_model = YOLO('bestsigns.pt') 
@@ -153,6 +153,7 @@ def main():
     forward_signals = [(0.8,0.8,1.0,1.0,'yellow',0.9,0.9)] # Example data
 
     while cap.isOpened():
+        count += 1
         # Read video frame
         ret, frame = cap.read()
         if not ret:
@@ -216,8 +217,8 @@ def main():
         # ---------------------------------
         # Trigger Voice Feedback Based on Analysis
         # ---------------------------------
-        # If a light has changed to green and the car is stationary, speak "Green"
-        voice.speak(str(len(lights_collection)))
+        if (count % 5 == 0):
+            voice.speak(str(len(lights_collection)))
         for idx, light in enumerate(lights_collection):
             # if light[7] and light[4].lower() == 'green' and direction == "Stationary":
                 # voice.speak("Green")
