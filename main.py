@@ -219,43 +219,43 @@ def main():
         # ---------------------------------
         if (count % 5 == 0):
             voice.speak(str(len(lights_collection)))
-        for idx, light in enumerate(lights_collection):
-            # if light[7] and light[4].lower() == 'green' and direction == "Stationary":
-                # voice.speak("Green")
-                # # Reset the changed flag after speaking
-                # updated = list(light)
-                # updated[7] = False
-                # lights_collection[idx] = tuple(updated)
-            if (light[4].lower() == "red"):
-                voice.speak("Red light detected")
-        
-        # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
-        # if direction == "Forward" and accel_magnitude > 1.5:
-        #     voice.speak("Slow down!")
+            for idx, light in enumerate(lights_collection):
+                # if light[7] and light[4].lower() == 'green' and direction == "Stationary":
+                    # voice.speak("Green")
+                    # # Reset the changed flag after speaking
+                    # updated = list(light)
+                    # updated[7] = False
+                    # lights_collection[idx] = tuple(updated)
+                if (light[4].lower() == "red"):
+                    voice.speak("Red light detected")
+            
+            # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
+            # if direction == "Forward" and accel_magnitude > 1.5:
+            #     voice.speak("Slow down!")
 
-        # # identify the speed limit in the image
+            # # identify the speed limit in the image
 
-        # # React to the analysis
+            # # React to the analysis
 
-        # # TTS for the lights
-        # # - If stopped at right light that turns green, say "Green"
-        # if False:
-        #     voice.speak('Green') 
-        
-        # # simulate the AI finding two new lights
-        # new_lights = [(0.1,0.1,0.3,0.3,'green',0.9,0.9, False), (0.4,0.4,0.6,0.6,'red',0.9,0.9, False)]
+            # # TTS for the lights
+            # # - If stopped at right light that turns green, say "Green"
+            # if False:
+            #     voice.speak('Green') 
+            
+            # # simulate the AI finding two new lights
+            # new_lights = [(0.1,0.1,0.3,0.3,'green',0.9,0.9, False), (0.4,0.4,0.6,0.6,'red',0.9,0.9, False)]
 
-        # # TTS for the speed limit
-        # # - If car exceeds speed limit, say "Slow down!"
+            # # TTS for the speed limit
+            # # - If car exceeds speed limit, say "Slow down!"
 
 
-        # ---------------------------------
-        # Display the annotated frame
-        # ---------------------------------
-        cv2.imshow("Annotated Frame", annotated_frame)
-        # Exit on 'q' key press
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            # ---------------------------------
+            # Display the annotated frame
+            # ---------------------------------
+            cv2.imshow("Annotated Frame", annotated_frame)
+            # Exit on 'q' key press
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
 
         sleep(0.1)  # Small delay to ease CPU load
