@@ -160,66 +160,66 @@ def main():
         ret, frame = cap.read()
         if not ret:
             break
-
-        # ---------------------------------
-        # Get accelerometer data
-        # ---------------------------------
-        direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
-        print(f"Accel -> Direction: {direction}, Accel: {accel_magnitude:.2f}, "
-              f"Ax: {(Ax+Ax_offset):.2f}, Ay: {(Ay+Ay_offset):.2f}, Az: {(Az+Az_offset):.2f}")
-        
-        # identify traffic signs in the image
-        # s_results = s_model(frame) 
-
-        # ---------------------------------
-        # Traffic Lights Detection via YOLO
-        # ---------------------------------
-        l_results = l_model(frame)  # Detect traffic lights
-        annotated_frame = l_results[0].plot()
-        identified_lights = []
-
-        for result in l_results[0].boxes:
-            # check confidence
-            if result.conf > 0.5:
-                print(result)
-
-                # extract the bounding box coordinates
-                x, y, w, h = result.xywh[0]
-                # print("IMAGE COORDINATES")
-                # print(x, y, w, h)
-
-
-                # crop the image to the traffic light
-                cropped_frame = crop_image(frame, (x, y, w, h))
-
-                # for debugging, save the cropped image as a file
-                # cv2.imwrite("cropped.jpg", cropped_frame) 
-
-                # also save the original frame annotated with the bounding box
-                # cv2.imwrite("annotated.jpg", annotated_frame)
-
-                # identify the bulb color in the image
-                b_results = b_model(cropped_frame)
-                # print(b_results)
-
-                # format the data for the update_lights function
-                x1, y1, x2, y2 = result.xyxy[0]
-                color = b_results[0].names[0]
-                light_conf = result.conf
-                color_conf = b_results[0].boxes
-                identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
-                print(color)
-                print(color_conf)
-        
-        # Update the lights collection with new detections
-        # lights_collection = update_lights(identified_lights, lights_collection) 
-        # print(f"Updated Lights Collection: {lights_collection}") 
-        lights_collection = identified_lights
-        
-        # ---------------------------------
-        # Trigger Voice Feedback Based on Analysis
-        # ---------------------------------
         if (count % 5 == 0):
+            # ---------------------------------
+            # Get accelerometer data
+            # ---------------------------------
+            direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
+            print(f"Accel -> Direction: {direction}, Accel: {accel_magnitude:.2f}, "
+                f"Ax: {(Ax+Ax_offset):.2f}, Ay: {(Ay+Ay_offset):.2f}, Az: {(Az+Az_offset):.2f}")
+            
+            # identify traffic signs in the image
+            # s_results = s_model(frame) 
+
+            # ---------------------------------
+            # Traffic Lights Detection via YOLO
+            # ---------------------------------
+            l_results = l_model(frame)  # Detect traffic lights
+            annotated_frame = l_results[0].plot()
+            identified_lights = []
+
+            for result in l_results[0].boxes:
+                # check confidence
+                if result.conf > 0.5:
+                    print(result)
+
+                    # extract the bounding box coordinates
+                    x, y, w, h = result.xywh[0]
+                    # print("IMAGE COORDINATES")
+                    # print(x, y, w, h)
+
+
+                    # crop the image to the traffic light
+                    cropped_frame = crop_image(frame, (x, y, w, h))
+
+                    # for debugging, save the cropped image as a file
+                    # cv2.imwrite("cropped.jpg", cropped_frame) 
+
+                    # also save the original frame annotated with the bounding box
+                    # cv2.imwrite("annotated.jpg", annotated_frame)
+
+                    # identify the bulb color in the image
+                    b_results = b_model(cropped_frame)
+                    # print(b_results)
+
+                    # format the data for the update_lights function
+                    x1, y1, x2, y2 = result.xyxy[0]
+                    color = b_results[0].names[0]
+                    light_conf = result.conf
+                    color_conf = b_results[0].boxes
+                    identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
+                    print(color)
+                    print(color_conf)
+            
+            # Update the lights collection with new detections
+            # lights_collection = update_lights(identified_lights, lights_collection) 
+            # print(f"Updated Lights Collection: {lights_collection}") 
+            lights_collection = identified_lights
+            
+            # ---------------------------------
+            # Trigger Voice Feedback Based on Analysis
+            # ---------------------------------
+            
             temp = red
             for idx, light in enumerate(lights_collection):
                 # if light[7] and light[4].lower() == 'green' and direction == "Stationary":
