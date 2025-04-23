@@ -5,6 +5,7 @@ from utils import *
 import smbus
 from time import sleep
 import math
+import threading
 
 # =============================== 
 # Accelerometer (MPU6050) Setup
@@ -32,6 +33,9 @@ Az_offset = -1.11
 Gx_offset = 0.29
 Gy_offset = 0.07
 Gz_offset = 0.09
+
+def speak_async(voice, text):
+    threading.Thread(target=voice.speak, args=(text,), daemon=True).start()
 
 def MPU_Init():
     bus.write_byte_data(Device_Address, SMPLRT_DIV, 7)
@@ -231,11 +235,11 @@ def main():
                 if (light[4].lower() == "stop"):
                     red = True
             if (red and not temp):
-                voice.speak("red light detected")
+                speak_async(voice, "red light detected")
             elif (red and temp):
-                voice.speak("red light still detected")
+                speak_async(voice, "red light still detected")
             elif (not red and temp):
-                voice.speak("red light no longer detected")
+                speak_async(voice, "red light no longerdetected")
             
             # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
             # if direction == "Forward" and accel_magnitude > 1.5:
@@ -264,7 +268,6 @@ def main():
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-
 
             sleep(0.1)  # Small delay to ease CPU load
 
