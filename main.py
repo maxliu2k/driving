@@ -226,8 +226,7 @@ def main():
                     # updated = list(light)
                     # updated[7] = False
                     # lights_collection[idx] = tuple(updated)
-                if (light[4].lower() == "red"):
-                    voice.speak("Red light detected")
+                voice.speak(light[4].lower())
             
             # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
             # if direction == "Forward" and accel_magnitude > 1.5:
