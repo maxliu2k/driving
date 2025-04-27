@@ -11,7 +11,7 @@ def speak_async(voice, text):
 def main():
     count = 0
     # Load YOLO model
-    l_model = YOLO('bestlights_temp.pt')
+    l_model = YOLO('bestlights.pt')
     # s_model = YOLO('bestsigns.pt') 
     b_model = YOLO('bestbulbs.pt')
 
@@ -19,7 +19,7 @@ def main():
     # cap = cv2.VideoCapture(0)
 
     # alternatively, use a video file 
-    cap = cv2.VideoCapture('videoTest/IMG_1412.MOV')
+    cap = cv2.VideoCapture('videoTest/IMG_1410.MOV')
 
     # (x1,y1,x2,y2,color,light_conf,color_conf) 
     left_turn_signals = [(0.2,0.2,0.4,0.4,'green',0.9,0.9)] # Example data
