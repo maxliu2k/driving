@@ -182,13 +182,13 @@ def main():
             annotated_frame = l_results[0].plot()
             identified_lights = []
 
-            for result in l_results[0].boxes:
+            for l_result in l_results[0].boxes:
                 # check confidence
-                if result.conf > 0.5:
+                if l_result.conf > 0.5:
                     # print(result)
 
                     # extract the bounding box coordinates
-                    x, y, w, h = result.xywh[0]
+                    x, y, w, h = l_result.xywh[0]
                     # print("IMAGE COORDINATES")
                     # print(x, y, w, h)
 
@@ -207,19 +207,15 @@ def main():
                     # print(b_results)
 
                     # format the data for the update_lights function
-                    x1, y1, x2, y2 = result.xyxy[0]
-                    color = b_results[0].names[0]
-                    light_conf = result.conf
-                    color_conf = b_results[0].boxes
-                    identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
-                    print(str(b_results[0].names) + "===================================================")
-                    # print(color_conf)
-                    cv2.imshow("Bulb Frame", b_results[0].plot())
-
-                    # Save some of the bulb frame images into a data folder
-                    cv2.imwrite(f"data/bulb_{count}.jpg", b_results[0].plot())
-                    print(f"Detected light: {color} with confidence {light_conf:.2f}")
-
+                    for b_result in b_results[0].boxes:
+                        x1, y1, x2, y2 = b_result.xyxy[0]
+                        color = b_result[0].names[0]
+                        light_conf = l_result.conf
+                        color_conf = b_result.conf
+                        identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
+                        print(str(b_result[0].names) + "===================================================")
+                        # print(color_conf)
+                        cv2.imshow("Bulb Frame", b_results[0].plot())
             
             # Update the lights collection with new detections
             # lights_collection = update_lights(identified_lights, lights_collection) 
