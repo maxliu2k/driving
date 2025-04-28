@@ -219,7 +219,7 @@ def main():
                             x1, y1, x2, y2 = box.xyxy[0]
                             id = int(box.cls[0].cpu().numpy())
                             color = b_results[0].names[id]
-                            color_conf = box.conf[0]
+                            color_conf = box.conf[0].item()
                             print("=====================================================")
                             print(f"Detected color: {color} with confidence {color_conf}")
                             if (color == 'go' and compare_rg[1] < color_conf):
@@ -236,19 +236,20 @@ def main():
             # ---------------------------------
             # Trigger Voice Feedback Based on Analysis
             # ---------------------------------
-            
-            temp = red
+
+
+            prev = red
             for compare in identified_lights:
                 print(str(compare[0]) + " " + str(compare[1]))
                 
-            if (red and not temp):
+            if (red and not prev):
                 speak_async(voice, "red light detected")
             # elif (red and temp):
             #     speak_async(voice, "red light still detected")
-            elif (not red and temp):
+            elif (not red and prev):
                 speak_async(voice, "red light no longer detected")
             
-            print(str(temp) + " " + str(red))
+            # print(str(temp) + " " + str(red))
 
             # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
             # if direction == "Forward" and accel_magnitude > 1.5:
