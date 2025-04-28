@@ -70,7 +70,6 @@ def main():
                     b_results = b_model(cropped_frame)
                     # print(b_results)
 
-                    print("------------------------------------")
                     # format the data for the update_lights function
                     for box in b_results[0].boxes:
                         x1, y1, x2, y2 = box.xyxy[0]
