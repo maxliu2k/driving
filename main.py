@@ -197,8 +197,8 @@ def main():
                     cropped_frame = crop_image(frame, (x - w/2, y - h/2, w, h))
                     cropped_frame = cv2.resize(
                     cropped_frame, 
-                    (cropped_frame.shape[1] * 3, cropped_frame.shape[0] * 3),  # (width, height)
-                    interpolation=cv2.INTER_LINEAR  # or cv2.INTER_CUBIC for better quality
+                    (cropped_frame.shape[1] * 5, cropped_frame.shape[0] * 5),  # (width, height)
+                    interpolation=cv2.INTER_CUBIC  # or cv2.INTER_CUBIC for better quality
                     )
 
                     # for debugging, save the cropped image as a file
