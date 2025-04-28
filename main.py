@@ -239,8 +239,11 @@ def main():
 
 
             prev = red
+            red = False
             for compare in identified_lights:
                 print(str(compare[0]) + " " + str(compare[1]))
+                if (compare[0] > compare[1]):
+                    red = True
                 
             if (red and not prev):
                 speak_async(voice, "red light detected")
