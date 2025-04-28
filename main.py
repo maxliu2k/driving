@@ -251,6 +251,8 @@ def main():
             elif (not red and temp):
                 speak_async(voice, "red light no longer detected")
             
+            print(temp + " " + red)
+
             # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
             # if direction == "Forward" and accel_magnitude > 1.5:
             #     voice.speak("Slow down!")
