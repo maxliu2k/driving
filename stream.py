@@ -2,11 +2,6 @@ import cv2
 from ultralytics import YOLO
 from utils import *
 from time import sleep
-import math
-import threading
-
-def speak_async(voice, text):
-    threading.Thread(target=voice.speak, args=(text,), daemon=True).start()
 
 def main():
     count = 0
@@ -19,7 +14,7 @@ def main():
     # cap = cv2.VideoCapture(0)
 
     # alternatively, use a video file 
-    cap = cv2.VideoCapture('videoTest/IMG_1410.MOV')
+    cap = cv2.VideoCapture('videoTest/IMG_1411.MOV')
 
     # (x1,y1,x2,y2,color,light_conf,color_conf) 
     left_turn_signals = [(0.2,0.2,0.4,0.4,'green',0.9,0.9)] # Example data
@@ -75,6 +70,7 @@ def main():
                     b_results = b_model(cropped_frame)
                     # print(b_results)
 
+                    print("------------------------------------")
                     # format the data for the update_lights function
                     for box in b_results[0].boxes:
                         x1, y1, x2, y2 = box.xyxy[0]
