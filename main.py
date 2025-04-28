@@ -213,16 +213,17 @@ def main():
 
                     # format the data for the update_lights function
                     for box in b_results[0].boxes:
-                        x1, y1, x2, y2 = box.xyxy[0]
-                        id = int(box.cls[0].cpu().numpy())
-                        color = b_results[0].names[id]
-                        color_conf = box.conf[0]
-                        light_conf = l_result.conf[0]
-                        identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
-                        print("=====================================================")
-                        print(f"Detected color: {color} with confidence {color_conf}")
+                        if (box.conf[0] > 0.7):
+                            x1, y1, x2, y2 = box.xyxy[0]
+                            id = int(box.cls[0].cpu().numpy())
+                            color = b_results[0].names[id]
+                            color_conf = box.conf[0]
+                            light_conf = l_result.conf[0]
+                            identified_lights.append((x1, y1, x2, y2, color, light_conf, color_conf, False))
+                            print("=====================================================")
+                            print(f"Detected color: {color} with confidence {color_conf}")
 
-                        cv2.imshow("Bulb Frame", b_results[0].plot())
+                            cv2.imshow("Bulb Frame", b_results[0].plot())
             
             # Update the lights collection with new detections
             # lights_collection = update_lights(identified_lights, lights_collection) 
