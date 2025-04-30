@@ -1,16 +1,25 @@
-from voice import Voice
+#???How to use simshow function to show in one window
+#???How to debug
+
+#from voice import Voice
 import cv2
 from ultralytics import YOLO
 from utils import *
-import smbus
+#import smbus
 from time import sleep
 import math
 import threading
 
+
+def speak_async(voice, text):
+    threading.Thread(target=voice.speak, args=(text,), daemon=True).start()
+
+
+"""
 # =============================== 
 # Accelerometer (MPU6050) Setup
 # ===============================
-# MPU6050 Registers
+# Accelerometer Registers
 PWR_MGMT_1   = 0x6B
 SMPLRT_DIV   = 0x19
 CONFIG       = 0x1A
@@ -23,8 +32,11 @@ GYRO_XOUT_H  = 0x43
 GYRO_YOUT_H  = 0x45
 GYRO_ZOUT_H  = 0x47
 
-bus = smbus.SMBus(1)     # For Raspberry Pi
-Device_Address = 0x68    # MPU6050 device address
+# For Raspberry Pi
+bus = smbus.SMBus(1)     
+
+# MPU6050 device address
+Device_Address = 0x68
 
 # Offsets provided for calibration
 Ax_offset = 0.05
@@ -33,9 +45,6 @@ Az_offset = -1.11
 Gx_offset = 0.29
 Gy_offset = 0.07
 Gz_offset = 0.09
-
-def speak_async(voice, text):
-    threading.Thread(target=voice.speak, args=(text,), daemon=True).start()
 
 def MPU_Init():
     bus.write_byte_data(Device_Address, SMPLRT_DIV, 7)
@@ -86,77 +95,69 @@ def get_direction_and_acceleration():
         direction = "Stationary"
     
     return direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz
+"""
 
-# ========================================
-# Update Lights Collection Function
-# ========================================
-def update_lights(new_light_data, old_light_data):
-    """
-    new_light_data: list of tuples containing (x1, y1, x2, y2, color, light_conf, color_conf, changed)
-    lights_collection: list to store the light data [light_data, light_data, ...]
-    """
+def detect_best_box(class_names, boxes, box_name, match_mode, conf, is_print):
+    
+    detected_boxes=[]
+    if match_mode == "equal":
+        detected_boxes = [
+            box for box in boxes
+            if class_names[int(box.cls[0].item())].lower()==box_name.lower() and box.conf[0].item() > conf]
+    if match_mode == "contain":
+        detected_boxes = [
+            box for box in boxes
+            if box_name.lower() in class_names[int(box.cls[0].item())].lower() and box.conf[0].item() > conf]
 
-    new_lights_to_add = [True for _ in range(len(new_light_data))]
-                      # [action for object in container if condition] 
-
-    # check if the center of the light is within the bounds of any of the current lights in the list
-    for old_light in old_light_data:
-
-        center_x = (old_light[0] + old_light[2]) / 2
-        center_y = (old_light[1] + old_light[3]) / 2
-
-        # for light in lights_collection: 
-        #     light[7] = -1
-
-        should_remove = True
-        for idx, new_light in enumerate(new_light_data):
-            if new_light[0] <= center_x <= new_light[2] and new_light[1] <= center_y <= new_light[3]:
-                should_remove = False
-                new_lights_to_add[idx] = False
-                # Update existing light
-                new_light_color = new_light[4]
-
-                old_light_data[idx] = new_light
-
-                # Check if current color is different from the old color
-                if old_light[4] != new_light_color:
-                    old_light_data[idx][7] = True  # Mark as changed
-
-        if should_remove:
-            old_light_data.remove(old_light)      
-      
-    # Add new lights that are not already in the old lights
-    for idx, add in enumerate(new_lights_to_add):
-        if add:
-            old_light_data.append(new_light_data[idx])
+    # If any such boxes exist, get the one with the highest confidence
+    if detected_boxes:
+        best_detected_box = max(detected_boxes, key=lambda b: b.conf[0].item())
         
-    return old_light_data
+        # Extract details
+        best_detected_box_id = int(best_detected_box.cls[0].item())
+        best_detected_box_conf = best_detected_box.conf[0].item()
+        best_detected_box_name = class_names[best_detected_box_id]
+        best_detected_box_x1, best_detected_box_y1, best_detected_box_x2, best_detected_box_y2 = best_detected_box.xyxy[0].tolist()
+        
+        if is_print == True:
+            print(f"Customized Printing - Detected '{box_name}' box with best confidence: {best_detected_box_name} with {best_detected_box_conf:.2f} confidence at [{best_detected_box_x1}, {best_detected_box_y1}, {best_detected_box_x2}, {best_detected_box_y2}]")
+    else:
+        best_detected_box = None
+        if is_print == True:
+            print(f"Customized Printing - No '{box_name}' box found.")
+
+    return best_detected_box
 
 # ========================================
 # Main function integrating vision and IMU
 # ========================================
+
 def main():
-    voice = Voice("piper.onnx")
+
+    conf_threshold=0.7
+
+    #voice = Voice("piper.onnx")
     count = 0
+
     # Load YOLO model
     l_model = YOLO('bestlights.pt')
-    # s_model = YOLO('bestsigns.pt') 
     b_model = YOLO('bestbulbs.pt')
+    s_model = YOLO('bestsigns.pt') 
 
     # Start video stream
     # cap = cv2.VideoCapture(0)
-
     # alternatively, use a video file 
-    cap = cv2.VideoCapture('videoTest/IMG_1411.MOV')
+    #cap = cv2.VideoCapture('videoTest/IMG_1411.MOV')     #traffic lights
+    cap = cv2.VideoCapture('videoTest/IMG_8756.mp4')     #traffic signs
 
-    voice.speak("Recording started!")
+    #voice.speak("Recording started!")
 
-    # (x1,y1,x2,y2,color,light_conf,color_conf) 
-    left_turn_signals = [(0.2,0.2,0.4,0.4,'green',0.9,0.9)] # Example data
-    right_turn_signals = [(0.5,0.5,0.7,0.7,'red',0.9,0.9)] # Example data
-    forward_signals = [(0.8,0.8,1.0,1.0,'yellow',0.9,0.9)] # Example data
+    #initial
+    is_red_traffic_light = False
+    is_stop_sign = False
+    is_stop_ahead_sign = False
+    #is_speed_limit_sign = False
 
-    red = False
 
     while cap.isOpened():
         count += 1
@@ -165,124 +166,186 @@ def main():
         if not ret:
             break
         if (count % 5 == 0):
-            # ---------------------------------
-            # Get accelerometer data
-            # ---------------------------------
-            direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
-            # print(f"Accel -> Direction: {direction}, Accel: {accel_magnitude:.2f}, "
-            #     f"Ax: {(Ax+Ax_offset):.2f}, Ay: {(Ay+Ay_offset):.2f}, Az: {(Az+Az_offset):.2f}")
-            
-            # identify traffic signs in the image
-            # s_results = s_model(frame) 
 
-            # ---------------------------------
+            # =================================
             # Traffic Lights Detection via YOLO
-            # ---------------------------------
-            l_results = l_model(frame)  # Detect traffic lights
-            annotated_frame = l_results[0].plot()
-            identified_lights = []
+            # go, goLeft, stop, stopLeft, warning, warningLeft
+            # =================================
 
-            for l_result in l_results[0].boxes:
-                # check confidence
-                if l_result.conf > 0.5:
-                    # print(result)
+            # Detect traffic lights
+            l_results = l_model(frame)                      
 
-                    # extract the bounding box coordinates
-                    x, y, w, h = l_result.xywh[0]
-                    # print("IMAGE COORDINATES")
-                    # print(x, y, w, h)
+            detected_traffic_lights = []
+            for l_box in l_results[0].boxes:
+                if l_box.conf[0] > conf_threshold:
+                    # Extract details                                    
+                    traffic_light_conf = l_box.conf[0].item()
+                    traffic_light_x1, traffic_light_y1, traffic_light_x2, traffic_light_y2 = l_box.xyxy[0]
+                    traffic_light_x, traffic_light_y, traffic_light_w, traffic_light_h = l_box.xywh[0]
+                    print(f"Customized Printing - Detected traffic light with {traffic_light_conf:.2f} confidence at [{traffic_light_x1}, {traffic_light_y1}, {traffic_light_x2}, {traffic_light_y2}] with weight {traffic_light_w} and height {traffic_light_h}")
 
 
                     # crop the image to the traffic light
-                    cropped_frame = crop_image(frame, (x - w/2, y - h/2, w, h))
-                    cropped_frame = cv2.resize(
-                    cropped_frame, 
-                    (cropped_frame.shape[1] * 5, cropped_frame.shape[0] * 5),  # (width, height)
-                    interpolation=cv2.INTER_CUBIC  # or cv2.INTER_CUBIC for better quality
-                    )
+                    cropped_traffic_light_frame = crop_image(frame, (traffic_light_x - traffic_light_w/2, traffic_light_y - traffic_light_h/2, traffic_light_w, traffic_light_h))
+                    
+                    
+                    #cropped_traffic_light_frame = cv2.resize(cropped_traffic_light_frame, 
+                    #                            # (width, height)
+                    #                            (cropped_traffic_light_frame.shape[1] * 5, cropped_traffic_light_frame.shape[0] * 5), 
+                    #                            # cv2.INTER_CUBIC for better quality
+                    #                            interpolation=cv2.INTER_CUBIC  
+                    #                            )
+                    
 
-                    # for debugging, save the cropped image as a file
-                    # cv2.imwrite("cropped.jpg", cropped_frame) 
+                    # Identify the bulb in the cropped image
+                    b_results = b_model(cropped_traffic_light_frame)
+                    #annotated_frame = b_results[0].plot(img=frame, line_width=1)  
+                    #cv2.imshow("Annotated Frame", annotated_frame)                                   
 
-                    # also save the original frame annotated with the bounding box
-                    # cv2.imwrite("annotated.jpg", annotated_frame)
+                    compare_red_green_conf = {'red': 0, 'green': 0}
 
-                    # identify the bulb color in the image
-                    b_results = b_model(cropped_frame)
-                    # print(b_results)
+                    best_red_bulb_box = detect_best_box(class_names, b_results[0].boxes, "stop", "contain", conf_threshold, False)
+                    if best_red_bulb_box != None:
+                        compare_red_green_conf['red'] = best_red_bulb_box.conf[0].item()
 
-                    compare_rg = [0, 0]
+                    best_green_bulb_box = detect_best_box(class_names, b_results[0].boxes, "go", "contain", conf_threshold, False)
+                    if best_green_bulb_box != None:
+                        compare_red_green_conf['green'] = best_green_bulb_box.conf[0].item()
 
-                    # format the data for the update_lights function
-                    for box in b_results[0].boxes:
-                        if (box.conf[0] > 0.7):
-                            x1, y1, x2, y2 = box.xyxy[0]
-                            id = int(box.cls[0].cpu().numpy())
-                            color = b_results[0].names[id]
-                            color_conf = box.conf[0].item()
-                            print("=====================================================")
-                            print(f"Detected color: {color} with confidence {color_conf}")
-                            if (color == 'go' and compare_rg[1] < color_conf):
-                                compare_rg[1] = color_conf
-                            elif (color == 'stop' and compare_rg[0] < color_conf):
-                                compare_rg[0] = color_conf
-                            identified_lights.append(compare_rg)
-                            cv2.imshow("Bulb Frame", b_results[0].plot())
+                    detected_traffic_lights.append(compare_red_green_conf)
+
+                    #for b_box in b_results[0].boxes:
+                    #    if (b_box.conf[0].item() > 0.7): 
+                    #        # Extract details                                    
+                    #        bulb_id = int(b_box.cls[0].item())
+                    #        bulb_conf = b_box.conf[0].item()
+                    #        bulb_name= b_results[0].names[bulb_id]
+                    #        bulb_x1, bulb_y1, bulb_x2, bulb_y2 = b_box.xyxy[0].tolist()  
+                    #        print(f"Customized Printing - Detected traffic bulb: {bulb_name} with {bulb_conf:.2f} confidence at [{bulb_x1}, {bulb_y1}, {bulb_x2}, {bulb_y2}]")
+                    #        if ((bulb_name == 'go' or bulb_name == 'goLeft') and compare_red_green_conf['green'] < bulb_conf):
+                    #            compare_red_green_conf['green'] = bulb_conf
+                    #        elif ((bulb_name == 'stop' or bulb_name == "stopLeft") and compare_red_green_conf['red'] < bulb_conf):
+                    #            compare_red_green_conf['red'] = bulb_conf
+                    #        detected_traffic_lights.append(compare_red_green_conf)             
+
             
-            # Update the lights collection with new detections
-            # lights_collection = update_lights(identified_lights, lights_collection) 
-            # print(f"Updated Lights Collection: {lights_collection}") 
+            # =====================================
+            # Traffic Signs Detection via YOLO
+            # stop/stopAhead Signs
+            # Speed Limit Sign: Passive Reminding using GPS sensor
+            # ======================================
+
+            # Detect traffic signs
+            s_results = s_model(frame) 
+             
             
-            # ---------------------------------
-            # Trigger Voice Feedback Based on Analysis
-            # ---------------------------------
+            # Get class name mappingshared_frame = l_results[0].plot(img=shared_frame, line_width=1)  shared_frame = l_results[0].plot(img=shared_frame, line_width=1)  
+            class_names = s_model.names
 
-
-            prev = red
-            red = False
-            for compare in identified_lights:
-                print(str(compare[0]) + " " + str(compare[1]))
-                if (compare[0] > compare[1]):
-                    red = True
-                
-            if (red and not prev):
-                speak_async(voice, "red light detected")
-            # elif (red and temp):
-            #     speak_async(voice, "red light still detected")
-            elif (not red and prev):
-                speak_async(voice, "red light no longer detected")
+            # best stop sign        
+            best_stop_sign_box = detect_best_box(class_names, s_results[0].boxes, "stop", "equal", conf_threshold, True)
             
-            # print(str(temp) + " " + str(red))
 
+            # best stop ahead sign
+            best_stop_ahead_sign_box = detect_best_box(class_names, s_results[0].boxes, "stopAhead", "equal", conf_threshold, True)
+
+
+            # best speed limit sign
+            best_speed_limit_sign_box = detect_best_box(class_names, s_results[0].boxes, "speedLimit", "contain", conf_threshold, True)
+            
+                  
+            # =====================================
+            # Turning Signal Detection via accelerometer sensor and microphone
+            # ==========================================
+  
+            # Get accelerometer data
+            # direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
+            # print(f"Accel -> Direction: {direction}, Accel: {accel_magnitude:.2f}, "
+            #     f"Ax: {(Ax+Ax_offset):.2f}, Ay: {(Ay+Ay_offset):.2f}, Az: {(Az+Az_offset):.2f}")
             # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
             # if direction == "Forward" and accel_magnitude > 1.5:
             #     voice.speak("Slow down!")
-
-            # # identify the speed limit in the image
-
-            # # React to the analysis
-
-            # # TTS for the lights
-            # # - If stopped at right light that turns green, say "Green"
-            # if False:
-            #     voice.speak('Green') 
             
-            # # simulate the AI finding two new lights
-            # new_lights = [(0.1,0.1,0.3,0.3,'green',0.9,0.9, False), (0.4,0.4,0.6,0.6,'red',0.9,0.9, False)]
+            # ==========Optional=================
+            # Seat Belt
+            # ==========================================
 
-            # # TTS for the speed limit
-            # # - If car exceeds speed limit, say "Slow down!"
+            
+            # =======================================
+            # Trigger Voice Feedback Based on Analysis
+            # ========================================
+
+            # -------traffic light---------
+            prev_is_red_traffic_light = is_red_traffic_light
+            
+            is_red_traffic_light = False
+            for compare_red_green_conf in detected_traffic_lights:
+                print("Customized Printing - Red Light Conf:" + str(compare_red_green_conf["red"]) + " vs Green Light Conf:" + str(compare_red_green_conf["green"]))
+                if (compare_red_green_conf["red"] >= compare_red_green_conf["green"]):
+                    is_red_traffic_light = True                 
+                
+            #if (is_red_traffic_light and not prev_is_red_traffic_light):
+            #    speak_async(voice, "red light detected")
+            #elif (not is_red_traffic_light and prev_is_red_traffic_light):
+            #    speak_async(voice, "red light no longer detected")
+            # -------end of traffic light-----------------
+            
+
+            # -------stop sign---------
+            prev_is_stop_sign = is_stop_sign
+
+            is_stop_sign = False
+            if best_stop_sign_box != None:
+                is_stop_sign = True
+
+            #if (is_stop_sign and not prev_is_stop_sign):
+            #    speak_async(voice, "stop sign detected")
+            #elif (not is_stop_sign and prev_is_stop_sign):
+            #    speak_async(voice, "stop sign no longer detected")
+            # -------end of stop sign------------------------------
 
 
-            # ---------------------------------
-            # Display the annotated frame
-            # ---------------------------------
-            cv2.imshow("Annotated Frame", annotated_frame)
+            # -------stop ahead sign---------
+            prev_is_stop_ahead_sign = is_stop_ahead_sign
+
+            is_stop_ahead_sign = False
+            if best_stop_ahead_sign_box != None:
+                is_stop_ahead_sign = True
+
+            #if (is_stop_ahead_sign and not prev_is_stop_ahead_sign):
+            #    speak_async(voice, "stop ahead sign detected")
+            #elif (not is_stop_ahead_sign and prev_is_stop_ahead_sign):
+            #    speak_async(voice, "stop ahead sign no longer detected")        
+            # --------end of stop ahead sign------------------------------
+
+
+            # -------speed limit sign: Passive reminding---------
+            if best_speed_limit_sign_box != None:
+                #To do: get speed using GPS module
+                driving_speed = 40
+                best_speed_limit_sign_box_speed_value = int(class_names[int(best_speed_limit_sign_box.cls[0].item())].replace("speedLimit", ""))
+            #    if driving_speed > best_speed_limit_sign_box_speed_value:
+            #        speak_async(voice, "Speed limit is " + best_speed_limit_sign_box_speed_value + ". Your current speed is " + driving_speed + ". Please slow down.")          
+            # -------end of speed limit sign------------------------------
+            
+      
+            frame = l_results[0].plot(img=frame, line_width=2) 
+            frame = s_results[0].plot(img=frame, line_width=2)   
+
+            #sets up a named window with full-screen support
+            cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
+            #actually makes it full screen
+            cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+            cv2.imshow("Annotated Frame", frame)
+            # cv2.imwrite("annotated_frame.jpg", frame)
+
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             if (count % 5 == 0):
-                sleep(0.17)  # Small delay to ease CPU load
+                # Small delay to ease CPU load
+                sleep(0.17)  
+
     cap.release()
     cv2.destroyAllWindows()
 
