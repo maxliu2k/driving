@@ -147,8 +147,7 @@ def main():
     # Start video stream
     # cap = cv2.VideoCapture(0)
     # alternatively, use a video file 
-    #cap = cv2.VideoCapture('videoTest/IMG_1411.MOV')     #traffic lights
-    cap = cv2.VideoCapture('videoTest/IMG_8756.mp4')     #traffic signs
+    cap = cv2.VideoCapture('videoTest/IMG_1411.mov')     #traffic lights
 
     #voice.speak("Recording started!")
 
@@ -199,8 +198,8 @@ def main():
 
                     # Identify the bulb in the cropped image
                     b_results = b_model(cropped_traffic_light_frame)
-                    #annotated_frame = b_results[0].plot(img=frame, line_width=1)  
-                    #cv2.imshow("Annotated Frame", annotated_frame)                                   
+                    #cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
+                    #cv2.imshow("Annotated Frame", cropped_traffic_light_frame)                                   
 
                     compare_red_green_conf = {'red': 0, 'green': 0}
 
