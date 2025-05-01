@@ -1,5 +1,6 @@
 #???How to use simshow function to show in one window
 #???How to debug
+#???For speedLimit sign, is it possible to extract number from image
 
 #from voice import Voice
 import cv2
