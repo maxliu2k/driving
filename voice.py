@@ -26,6 +26,7 @@
 #             print(f"Error: {e}")
 
 import io
+import sys
 import wave
 import subprocess
 from piper import PiperVoice
@@ -41,7 +42,8 @@ class Voice:
         with wave.open(filename, "wb") as wav_file:
             self.voice.synthesize(text, wav_file)
         # 2) Play it back via ALSA’s aplay:
-        subprocess.run(["aplay", filename], check=True)
+        player = "afplay" if sys.platform == "darwin" else "aplay"
+        subprocess.run([player, filename], check=True)
 
     def speak_raw(self, text: str):
         # If you prefer in‑memory playback:
@@ -58,6 +60,8 @@ class Voice:
 
 if __name__ == "__main__":
     v = Voice("piper.onnx")
-    v.speak_to_file("Hello from your Raspberry Pi!")
+    # v.speak_to_file("Hello from your Raspberry Pi!")
+    v.speak_to_file("red light detected")
+    v.speak_to_file("red light no longer detected")
     # or
     # v.speak_raw("Streaming from memory!")

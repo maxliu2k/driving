@@ -164,10 +164,13 @@ class _SessionWidgetState extends State<SessionWidget>
                             // start image stream to the processing service
                             _cameraController
                                 .startImageStream((CameraImage image) {
-                                  // only process if the last frame was sent 0.5 seconds or more ago
-                                  if (lastFrameTimestamp != null && DateTime.now().difference(lastFrameTimestamp!) < const Duration(milliseconds: 500)) {
-                                    return;
-                                  }
+                              // only process if the last frame was sent 0.5 seconds or more ago
+                              if (lastFrameTimestamp != null &&
+                                  DateTime.now()
+                                          .difference(lastFrameTimestamp!) <
+                                      const Duration(milliseconds: 500)) {
+                                return;
+                              }
 
                               processFrame(image, rotation);
                               lastFrameTimestamp = DateTime.now();
@@ -177,7 +180,15 @@ class _SessionWidgetState extends State<SessionWidget>
                               aspectRatio: _cameraController.value.aspectRatio,
                               child: ClipRRect(
                                   borderRadius: BorderRadius.circular(20.0),
-                                  child: cameraPreview),
+                                  // child: cameraPreview
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20.0),
+                                      color:
+                                          const Color.fromARGB(255, 0, 255, 8),
+                                    ),
+                                  ) // green screen for demo purposes
+                                  ),
                             );
                           } else {
                             return Center(
