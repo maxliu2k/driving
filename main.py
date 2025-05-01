@@ -147,7 +147,7 @@ def main():
     # Start video stream
     # cap = cv2.VideoCapture(0)
     # alternatively, use a video file 
-    cap = cv2.VideoCapture('videoTest/IMG_1411.mov')     #traffic lights
+    cap = cv2.VideoCapture('videoTest/IMG_1411.mov')
 
     #voice.speak("Recording started!")
 
@@ -188,18 +188,18 @@ def main():
                     cropped_traffic_light_frame = crop_image(frame, (traffic_light_x - traffic_light_w/2, traffic_light_y - traffic_light_h/2, traffic_light_w, traffic_light_h))
                     
                     
-                    #cropped_traffic_light_frame = cv2.resize(cropped_traffic_light_frame, 
-                    #                            # (width, height)
-                    #                            (cropped_traffic_light_frame.shape[1] * 5, cropped_traffic_light_frame.shape[0] * 5), 
-                    #                            # cv2.INTER_CUBIC for better quality
-                    #                            interpolation=cv2.INTER_CUBIC  
-                    #                            )
+                    cropped_traffic_light_frame = cv2.resize(cropped_traffic_light_frame, 
+                                                # (width, height)
+                                                (cropped_traffic_light_frame.shape[1] * 5, cropped_traffic_light_frame.shape[0] * 5), 
+                                                # cv2.INTER_CUBIC for better quality
+                                                interpolation=cv2.INTER_CUBIC  
+                                                )
                     
 
                     # Identify the bulb in the cropped image
                     b_results = b_model(cropped_traffic_light_frame)
-                    #cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
-                    #cv2.imshow("Annotated Frame", cropped_traffic_light_frame)                                   
+                    cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
+                    cv2.imshow("Cropped Frame", cropped_traffic_light_frame)                                   
 
                     compare_red_green_conf = {'red': 0, 'green': 0}
 
@@ -332,9 +332,9 @@ def main():
             frame = s_results[0].plot(img=frame, line_width=2)   
 
             #sets up a named window with full-screen support
-            cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
+            #cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
             #actually makes it full screen
-            cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+            #cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
             cv2.imshow("Annotated Frame", frame)
             # cv2.imwrite("annotated_frame.jpg", frame)
 
