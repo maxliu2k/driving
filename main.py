@@ -1,6 +1,6 @@
 #???How to use simshow function to show in one window
-#???How to debug
-#???For speedLimit sign, is it possible to extract number from image
+#???How to debug mode
+#???For speedLimit sign, is it possible to extract number from image.
 
 #from voice import Voice
 import cv2
@@ -155,7 +155,6 @@ def main():
     #initial
     is_red_traffic_light = False
     is_stop_sign = False
-    is_stop_ahead_sign = False
     #is_speed_limit_sign = False
 
 
@@ -173,7 +172,8 @@ def main():
             # =================================
 
             # Detect traffic lights
-            l_results = l_model(frame)                      
+            l_results = l_model(frame)                 
+            frame = l_results[0].plot(img=frame, line_width=2) 
 
             detected_traffic_lights = []
             for l_box in l_results[0].boxes:
@@ -188,10 +188,13 @@ def main():
                     # crop the image to the traffic light
                     cropped_traffic_light_frame = crop_image(frame, (traffic_light_x - traffic_light_w/2, traffic_light_y - traffic_light_h/2, traffic_light_w, traffic_light_h))
                     
+                    # Calculate the crop to original offsets
+                    offset_x = int(traffic_light_x - traffic_light_w/2)
+                    offset_y = int(traffic_light_y - traffic_light_h/2)
                     
                     cropped_traffic_light_frame = cv2.resize(cropped_traffic_light_frame, 
                                                 # (width, height)
-                                                (cropped_traffic_light_frame.shape[1] * 5, cropped_traffic_light_frame.shape[0] * 5), 
+                                                (cropped_traffic_light_frame.shape[1], cropped_traffic_light_frame.shape[0]), 
                                                 # cv2.INTER_CUBIC for better quality
                                                 interpolation=cv2.INTER_CUBIC  
                                                 )
@@ -200,19 +203,45 @@ def main():
                     # Identify the bulb in the cropped image
                     b_results = b_model(cropped_traffic_light_frame)
                     cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
-                    cv2.imshow("Cropped Frame", cropped_traffic_light_frame)                                   
+                    # cv2.imshow("Cropped Frame", cropped_traffic_light_frame)   
+
+                    b_class_names = b_model.names                               
 
                     compare_red_green_conf = {'red': 0, 'green': 0}
 
-                    best_red_bulb_box = detect_best_box(class_names, b_results[0].boxes, "stop", "contain", conf_threshold, False)
+                    best_red_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "stop", "contain", conf_threshold, False)
                     if best_red_bulb_box != None:
                         compare_red_green_conf['red'] = best_red_bulb_box.conf[0].item()
 
-                    best_green_bulb_box = detect_best_box(class_names, b_results[0].boxes, "go", "contain", conf_threshold, False)
+                    best_green_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "go", "contain", conf_threshold, False)
                     if best_green_bulb_box != None:
                         compare_red_green_conf['green'] = best_green_bulb_box.conf[0].item()
 
                     detected_traffic_lights.append(compare_red_green_conf)
+
+                    for compare_red_green_conf in detected_traffic_lights:
+                        # determine the color and lable
+                        is_red = compare_red_green_conf['red'] >= compare_red_green_conf['green']
+                        label = "Red" if is_red else "Green"
+
+                        # extract the bounding box coordinates
+                        if is_red and best_red_bulb_box != None:
+                            bx1, by1, bx2, by2 = best_red_bulb_box.xyxy[0].tolist()
+                        elif not is_red and best_green_bulb_box != None:
+                            bx1, by1, bx2, by2 = best_green_bulb_box.xyxy[0].tolist()
+                        else:
+                            continue
+                        # adjust the coordinates to the original frame
+                        traffic_light_x1 = int(bx1 + offset_x)
+                        traffic_light_y1 = int(by1 + offset_y)
+                        traffic_light_x2 = int(bx2 + offset_x)
+                        traffic_light_y2 = int(by2 + offset_y)
+
+                        # Draw the bounding box and label on the original frame over just the bulb
+                        cv2.rectangle(frame, (traffic_light_x1, traffic_light_y1), (traffic_light_x2, traffic_light_y2), (0, 255, 0), 2)
+                        cv2.putText(frame, label, (int(traffic_light_x1), int(traffic_light_y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+
 
                     #for b_box in b_results[0].boxes:
                     #    if (b_box.conf[0].item() > 0.7): 
@@ -237,21 +266,14 @@ def main():
 
             # Detect traffic signs
             s_results = s_model(frame) 
-             
-            
-            # Get class name mappingshared_frame = l_results[0].plot(img=shared_frame, line_width=1)  shared_frame = l_results[0].plot(img=shared_frame, line_width=1)  
-            class_names = s_model.names
+        
+            s_class_names = s_model.names
 
             # best stop sign        
-            best_stop_sign_box = detect_best_box(class_names, s_results[0].boxes, "stop", "equal", conf_threshold, True)
-            
-
-            # best stop ahead sign
-            best_stop_ahead_sign_box = detect_best_box(class_names, s_results[0].boxes, "stopAhead", "equal", conf_threshold, True)
-
+            best_stop_sign_box = detect_best_box(s_class_names, s_results[0].boxes, "stop", "equal", conf_threshold, True)
 
             # best speed limit sign
-            best_speed_limit_sign_box = detect_best_box(class_names, s_results[0].boxes, "speedLimit", "contain", conf_threshold, True)
+            best_speed_limit_sign_box = detect_best_box(s_class_names, s_results[0].boxes, "speedLimit", "contain", conf_threshold, True)
             
                   
             # =====================================
@@ -305,31 +327,17 @@ def main():
             # -------end of stop sign------------------------------
 
 
-            # -------stop ahead sign---------
-            prev_is_stop_ahead_sign = is_stop_ahead_sign
-
-            is_stop_ahead_sign = False
-            if best_stop_ahead_sign_box != None:
-                is_stop_ahead_sign = True
-
-            #if (is_stop_ahead_sign and not prev_is_stop_ahead_sign):
-            #    speak_async(voice, "stop ahead sign detected")
-            #elif (not is_stop_ahead_sign and prev_is_stop_ahead_sign):
-            #    speak_async(voice, "stop ahead sign no longer detected")        
-            # --------end of stop ahead sign------------------------------
-
-
             # -------speed limit sign: Passive reminding---------
             if best_speed_limit_sign_box != None:
                 #To do: get speed using GPS module
                 driving_speed = 40
-                best_speed_limit_sign_box_speed_value = int(class_names[int(best_speed_limit_sign_box.cls[0].item())].replace("speedLimit", ""))
+                best_speed_limit_sign_box_speed_value = int(s_class_names[int(best_speed_limit_sign_box.cls[0].item())].replace("speedLimit", ""))
             #    if driving_speed > best_speed_limit_sign_box_speed_value:
             #        speak_async(voice, "Speed limit is " + best_speed_limit_sign_box_speed_value + ". Your current speed is " + driving_speed + ". Please slow down.")          
             # -------end of speed limit sign------------------------------
             
       
-            frame = l_results[0].plot(img=frame, line_width=2) 
+            
             frame = s_results[0].plot(img=frame, line_width=2)   
 
             #sets up a named window with full-screen support
