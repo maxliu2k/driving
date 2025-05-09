@@ -3,7 +3,7 @@ from PIL import Image
 import pytesseract
 
 def extract_text(image_path: str) -> str:
-    img = Image.open(image_path)
+    img = Image.open('testing-signs/8757_0000.jpg')
     return pytesseract.image_to_string(img)
 
 if __name__ == "__main__":
