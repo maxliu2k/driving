@@ -10,7 +10,8 @@ from utils import *
 from time import sleep
 import math
 import threading
-
+import pytesseract
+import re
 
 def speak_async(voice, text):
     threading.Thread(target=voice.speak, args=(text,), daemon=True).start()
@@ -175,7 +176,7 @@ def main():
             l_results = l_model(frame)                 
             frame = l_results[0].plot(img=frame, line_width=2) 
 
-            detected_traffic_lights = []
+            detected_traffic_light_rgy_confs = []
             for l_box in l_results[0].boxes:
                 if l_box.conf[0] > conf_threshold:
                     # Extract details                                    
@@ -203,45 +204,51 @@ def main():
                     # Identify the bulb in the cropped image
                     b_results = b_model(cropped_traffic_light_frame)
                     cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
-                    # cv2.imshow("Cropped Frame", cropped_traffic_light_frame)   
+                    cv2.imshow("Cropped Frame", cropped_traffic_light_frame)   
 
-                    b_class_names = b_model.names                               
+                    b_class_names = b_model.names       
 
-                    compare_red_green_conf = {'red': 0, 'green': 0}
+                    best_red_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "stop", "contain", 0.5, False)                        
+                    best_green_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "go", "contain", 0.5, False)
+                    #best_yellow_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "warning", "contain", 0.5, False)
 
-                    best_red_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "stop", "contain", conf_threshold, False)
+
+                    detected_traffic_light_rgy_conf = {'red': 0, 'green': 0, 'yellow': 0}                   
                     if best_red_bulb_box != None:
-                        compare_red_green_conf['red'] = best_red_bulb_box.conf[0].item()
-
-                    best_green_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "go", "contain", conf_threshold, False)
+                        detected_traffic_light_rgy_conf['red'] = best_red_bulb_box.conf[0].item()                    
                     if best_green_bulb_box != None:
-                        compare_red_green_conf['green'] = best_green_bulb_box.conf[0].item()
+                        detected_traffic_light_rgy_conf['green'] = best_green_bulb_box.conf[0].item()
+                    #if best_yellow_bulb_box != None:
+                    #    detected_traffic_light_rgy_conf['yellow'] = best_yellow_bulb_box.conf[0].item()
+                   
+                    # determine the color and label
+                    is_red = detected_traffic_light_rgy_conf['red'] !=0 and detected_traffic_light_rgy_conf['red'] >= detected_traffic_light_rgy_conf['green']
+                    is_green = detected_traffic_light_rgy_conf['green'] !=0 and detected_traffic_light_rgy_conf['green'] > detected_traffic_light_rgy_conf['red'] 
+                    label = "Red" if is_red else "Green" if is_green else ""
 
-                    detected_traffic_lights.append(compare_red_green_conf)
+                    # extract the bounding box coordinates
+                    if is_red and best_red_bulb_box != None:
+                        bx1, by1, bx2, by2 = best_red_bulb_box.xyxy[0].tolist()
+                    elif is_green and best_green_bulb_box != None:
+                        bx1, by1, bx2, by2 = best_green_bulb_box.xyxy[0].tolist()
+                    else:
+                        continue
+                    # adjust the coordinates to the original frame
+                    traffic_light_x1 = int(bx1 + offset_x)
+                    traffic_light_y1 = int(by1 + offset_y)
+                    traffic_light_x2 = int(bx2 + offset_x)
+                    traffic_light_y2 = int(by2 + offset_y)
 
-                    for compare_red_green_conf in detected_traffic_lights:
-                        # determine the color and lable
-                        is_red = compare_red_green_conf['red'] >= compare_red_green_conf['green']
-                        label = "Red" if is_red else "Green"
+                    # Draw the bounding box and label on the original frame over just the bulb
+                    if is_red:
+                        cv2.rectangle(frame, (traffic_light_x1, traffic_light_y1), (traffic_light_x2, traffic_light_y2), (0, 0, 255), 2)
+                        cv2.putText(frame, label, (int(traffic_light_x1), int(traffic_light_y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
-                        # extract the bounding box coordinates
-                        if is_red and best_red_bulb_box != None:
-                            bx1, by1, bx2, by2 = best_red_bulb_box.xyxy[0].tolist()
-                        elif not is_red and best_green_bulb_box != None:
-                            bx1, by1, bx2, by2 = best_green_bulb_box.xyxy[0].tolist()
-                        else:
-                            continue
-                        # adjust the coordinates to the original frame
-                        traffic_light_x1 = int(bx1 + offset_x)
-                        traffic_light_y1 = int(by1 + offset_y)
-                        traffic_light_x2 = int(bx2 + offset_x)
-                        traffic_light_y2 = int(by2 + offset_y)
-
-                        # Draw the bounding box and label on the original frame over just the bulb
+                    if is_green:
                         cv2.rectangle(frame, (traffic_light_x1, traffic_light_y1), (traffic_light_x2, traffic_light_y2), (0, 255, 0), 2)
                         cv2.putText(frame, label, (int(traffic_light_x1), int(traffic_light_y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-
+                    detected_traffic_light_rgy_confs.append(detected_traffic_light_rgy_conf)
 
                     #for b_box in b_results[0].boxes:
                     #    if (b_box.conf[0].item() > 0.7): 
@@ -255,9 +262,9 @@ def main():
                     #            compare_red_green_conf['green'] = bulb_conf
                     #        elif ((bulb_name == 'stop' or bulb_name == "stopLeft") and compare_red_green_conf['red'] < bulb_conf):
                     #            compare_red_green_conf['red'] = bulb_conf
-                    #        detected_traffic_lights.append(compare_red_green_conf)             
+                    #detected_traffic_lights.append(compare_red_green_conf)             
+                
 
-            
             # =====================================
             # Traffic Signs Detection via YOLO
             # stop/stopAhead Signs
@@ -266,11 +273,36 @@ def main():
 
             # Detect traffic signs
             s_results = s_model(frame) 
-        
             s_class_names = s_model.names
 
             # best stop sign        
             best_stop_sign_box = detect_best_box(s_class_names, s_results[0].boxes, "stop", "equal", conf_threshold, True)
+
+            # best speed limit sign
+            best_speed_limit_value = 0
+            best_speed_limit_conf = 0
+            for s_box in s_results[0].boxes:
+                x1, y1, x2, y2 = map(int, s_box.xyxy[0])
+
+                # Crop the detected region from the frame
+                cropped = frame[y1:y2, x1:x2]
+
+                # Optional: Preprocess the cropped image for better OCR
+                #gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+                #_, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+                lowercase_text= pytesseract.image_to_string(cropped).lower()
+                if 'speed' in lowercase_text and 'limit' in lowercase_text:
+
+                    # Extract the first number (e.g., 50)
+                    match = re.search(r'\b\d{1,2}\b', lowercase_text)
+                    if match and s_box.conf[0].item()>= best_speed_limit_conf:
+                        best_speed_limit_conf = s_box.conf[0].item()
+                        best_speed_limit_value = int(match.group())
+                        print(f"Customized Printing - Extracted speed limit: {best_speed_limit_value}")
+
+        
+            
 
             # best speed limit sign
             best_speed_limit_sign_box = detect_best_box(s_class_names, s_results[0].boxes, "speedLimit", "contain", conf_threshold, True)
@@ -301,15 +333,16 @@ def main():
             prev_is_red_traffic_light = is_red_traffic_light
             
             is_red_traffic_light = False
-            for compare_red_green_conf in detected_traffic_lights:
-                print("Customized Printing - Red Light Conf:" + str(compare_red_green_conf["red"]) + " vs Green Light Conf:" + str(compare_red_green_conf["green"]))
-                if (compare_red_green_conf["red"] >= compare_red_green_conf["green"]):
+            for detected_traffic_light_rgy_conf in detected_traffic_light_rgy_confs:
+                print("Customized Printing - Red Light Conf:" + str(detected_traffic_light_rgy_conf["red"]) + " vs Green Light Conf:" + str(detected_traffic_light_rgy_conf["green"]))
+                if (detected_traffic_light_rgy_conf["red"] >= detected_traffic_light_rgy_conf["green"]):
                     is_red_traffic_light = True                 
                 
             #if (is_red_traffic_light and not prev_is_red_traffic_light):
             #    speak_async(voice, "red light detected")
             #elif (not is_red_traffic_light and prev_is_red_traffic_light):
             #    speak_async(voice, "red light no longer detected")
+
             # -------end of traffic light-----------------
             
 
@@ -324,16 +357,17 @@ def main():
             #    speak_async(voice, "stop sign detected")
             #elif (not is_stop_sign and prev_is_stop_sign):
             #    speak_async(voice, "stop sign no longer detected")
+
             # -------end of stop sign------------------------------
 
 
             # -------speed limit sign: Passive reminding---------
-            if best_speed_limit_sign_box != None:
+            if best_speed_limit_value != None:
                 #To do: get speed using GPS module
                 driving_speed = 40
-                best_speed_limit_sign_box_speed_value = int(s_class_names[int(best_speed_limit_sign_box.cls[0].item())].replace("speedLimit", ""))
-            #    if driving_speed > best_speed_limit_sign_box_speed_value:
-            #        speak_async(voice, "Speed limit is " + best_speed_limit_sign_box_speed_value + ". Your current speed is " + driving_speed + ". Please slow down.")          
+            #   if driving_speed > best_speed_limit_value:
+            #       speak_async(voice, "Speed limit is " + best_speed_limit_value + ". Your current speed is " + driving_speed + ". Please slow down.")    
+                  
             # -------end of speed limit sign------------------------------
             
       
