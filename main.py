@@ -204,7 +204,7 @@ def main():
                     # Identify the bulb in the cropped image
                     b_results = b_model(cropped_traffic_light_frame)
                     cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
-                    cv2.imshow("Cropped Frame", cropped_traffic_light_frame)   
+                    #cv2.imshow("Cropped Frame", cropped_traffic_light_frame)   
 
                     b_class_names = b_model.names       
 
