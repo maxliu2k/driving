@@ -13,6 +13,12 @@ import threading
 import pytesseract
 import re
 
+"""
+import serial 
+import pynmea2 #pip install pyserial pynmea2
+"""
+
+
 def speak_async(voice, text):
     threading.Thread(target=voice.speak, args=(text,), daemon=True).start()
 
@@ -99,6 +105,25 @@ def get_direction_and_acceleration():
     return direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz
 """
 
+
+"""
+def read_gps_speed(serial_port='/dev/serial0', baudrate=9600):
+    # Open serial connection to GPS
+    speed_mph = 0
+    with serial.Serial(serial_port, baudrate, timeout=1) as ser:
+        while True:
+            try:
+                line = ser.readline().decode('ascii', errors='replace')
+                if line.startswith('$GPRMC'):
+                    msg = pynmea2.parse(line)
+                    if msg.status == 'A':  # A = valid, V = invalid
+                        speed_knots = float(msg.spd_over_grnd)
+                        speed_mph = speed_knots * 1.15078
+            except pynmea2.ParseError:
+                continue
+    return speed_mph
+"""
+
 def detect_best_box(class_names, boxes, box_name, match_mode, conf, is_print):
     
     detected_boxes=[]
@@ -130,13 +155,17 @@ def detect_best_box(class_names, boxes, box_name, match_mode, conf, is_print):
 
     return best_detected_box
 
+
+
 # ========================================
 # Main function integrating vision and IMU
 # ========================================
 
 def main():
 
-    conf_threshold=0.7
+    l_conf_threshold=0.5
+    b_conf_threshold=0.5
+    s_conf_threshold=0.4
 
     #voice = Voice("piper.onnx")
     count = 0
@@ -150,6 +179,7 @@ def main():
     # cap = cv2.VideoCapture(0)
     # alternatively, use a video file 
     cap = cv2.VideoCapture('videoTest/IMG_1411.mov')
+    # cap = cv2.VideoCapture('videoTest/IMG_8767.mp4') # for speed limit sign
 
     #voice.speak("Recording started!")
 
@@ -173,25 +203,32 @@ def main():
             # =================================
 
             # Detect traffic lights
-            l_results = l_model(frame)                 
-            frame = l_results[0].plot(img=frame, line_width=2) 
+            l_results = l_model(frame)   
+            l_class_names = l_model.names            
+            #frame = l_results[0].plot(img=frame, line_width=2) 
 
             detected_traffic_light_rgy_confs = []
             for l_box in l_results[0].boxes:
-                if l_box.conf[0] > conf_threshold:
-                    # Extract details                                    
-                    traffic_light_conf = l_box.conf[0].item()
-                    traffic_light_x1, traffic_light_y1, traffic_light_x2, traffic_light_y2 = l_box.xyxy[0]
-                    traffic_light_x, traffic_light_y, traffic_light_w, traffic_light_h = l_box.xywh[0]
-                    print(f"Customized Printing - Detected traffic light with {traffic_light_conf:.2f} confidence at [{traffic_light_x1}, {traffic_light_y1}, {traffic_light_x2}, {traffic_light_y2}] with weight {traffic_light_w} and height {traffic_light_h}")
+                if l_box.conf[0] > l_conf_threshold:
 
-
+                    # Extract details  
+                    box_conf = l_box.conf[0].item()
+                    x1, y1, x2, y2 = map(int, l_box.xyxy[0])
+                    x, y, w, h = map(int, l_box.xywh[0])
+                    box_id = int(l_box.cls[0].item())               
+                    box_name = l_class_names[box_id]
+                    print(f"Customized Printing - Detected traffic light with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")
+                
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                    cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+                    
                     # crop the image to the traffic light
-                    cropped_traffic_light_frame = crop_image(frame, (traffic_light_x - traffic_light_w/2, traffic_light_y - traffic_light_h/2, traffic_light_w, traffic_light_h))
+                    cropped_traffic_light_frame = crop_image(frame, (x - w/2, y - h/2, w, h))
                     
                     # Calculate the crop to original offsets
-                    offset_x = int(traffic_light_x - traffic_light_w/2)
-                    offset_y = int(traffic_light_y - traffic_light_h/2)
+                    offset_x = int(x - w/2)
+                    offset_y = int(y - h/2)
                     
                     cropped_traffic_light_frame = cv2.resize(cropped_traffic_light_frame, 
                                                 # (width, height)
@@ -208,8 +245,8 @@ def main():
 
                     b_class_names = b_model.names       
 
-                    best_red_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "stop", "contain", 0.5, False)                        
-                    best_green_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "go", "contain", 0.5, False)
+                    best_red_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "stop", "contain", b_conf_threshold, False)                        
+                    best_green_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "go", "contain", b_conf_threshold, False)
                     #best_yellow_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "warning", "contain", 0.5, False)
 
 
@@ -234,35 +271,21 @@ def main():
                     else:
                         continue
                     # adjust the coordinates to the original frame
-                    traffic_light_x1 = int(bx1 + offset_x)
-                    traffic_light_y1 = int(by1 + offset_y)
-                    traffic_light_x2 = int(bx2 + offset_x)
-                    traffic_light_y2 = int(by2 + offset_y)
+                    traffic_bulb_x1 = int(bx1 + offset_x)
+                    traffic_bulb_y1 = int(by1 + offset_y)
+                    traffic_bulb_x2 = int(bx2 + offset_x)
+                    traffic_bulb_y2 = int(by2 + offset_y)
 
                     # Draw the bounding box and label on the original frame over just the bulb
                     if is_red:
-                        cv2.rectangle(frame, (traffic_light_x1, traffic_light_y1), (traffic_light_x2, traffic_light_y2), (0, 0, 255), 2)
-                        cv2.putText(frame, label, (int(traffic_light_x1), int(traffic_light_y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                        cv2.rectangle(frame, (traffic_bulb_x1, traffic_bulb_y1), (traffic_bulb_x2, traffic_bulb_y2), (0, 0, 255), 2)
+                        cv2.putText(frame, label, (int(traffic_bulb_x2), int(traffic_bulb_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
                     if is_green:
-                        cv2.rectangle(frame, (traffic_light_x1, traffic_light_y1), (traffic_light_x2, traffic_light_y2), (0, 255, 0), 2)
-                        cv2.putText(frame, label, (int(traffic_light_x1), int(traffic_light_y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        cv2.rectangle(frame, (traffic_bulb_x1, traffic_bulb_y1), (traffic_bulb_x2, traffic_bulb_y2), (0, 255, 0), 2)
+                        cv2.putText(frame, label, (int(traffic_bulb_x2), int(traffic_bulb_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-                    detected_traffic_light_rgy_confs.append(detected_traffic_light_rgy_conf)
-
-                    #for b_box in b_results[0].boxes:
-                    #    if (b_box.conf[0].item() > 0.7): 
-                    #        # Extract details                                    
-                    #        bulb_id = int(b_box.cls[0].item())
-                    #        bulb_conf = b_box.conf[0].item()
-                    #        bulb_name= b_results[0].names[bulb_id]
-                    #        bulb_x1, bulb_y1, bulb_x2, bulb_y2 = b_box.xyxy[0].tolist()  
-                    #        print(f"Customized Printing - Detected traffic bulb: {bulb_name} with {bulb_conf:.2f} confidence at [{bulb_x1}, {bulb_y1}, {bulb_x2}, {bulb_y2}]")
-                    #        if ((bulb_name == 'go' or bulb_name == 'goLeft') and compare_red_green_conf['green'] < bulb_conf):
-                    #            compare_red_green_conf['green'] = bulb_conf
-                    #        elif ((bulb_name == 'stop' or bulb_name == "stopLeft") and compare_red_green_conf['red'] < bulb_conf):
-                    #            compare_red_green_conf['red'] = bulb_conf
-                    #detected_traffic_lights.append(compare_red_green_conf)             
+                    detected_traffic_light_rgy_confs.append(detected_traffic_light_rgy_conf)        
                 
 
             # =====================================
@@ -272,41 +295,61 @@ def main():
             # ======================================
 
             # Detect traffic signs
-            s_results = s_model(frame) 
+            s_results = s_model(frame)             
             s_class_names = s_model.names
+            #frame = s_results[0].plot(img=frame, line_width=2) 
 
-            # best stop sign        
-            best_stop_sign_box = detect_best_box(s_class_names, s_results[0].boxes, "stop", "equal", conf_threshold, True)
 
-            # best speed limit sign
+            # Loop each box to find best Stop sign and Speed Limit sign
             best_speed_limit_value = 0
             best_speed_limit_conf = 0
+            best_stop_conf = 0
+            best_stop_sign_box = None
             for s_box in s_results[0].boxes:
-                x1, y1, x2, y2 = map(int, s_box.xyxy[0])
+                if s_box.conf[0] > s_conf_threshold:
+                    box_conf = s_box.conf[0].item()
+                    x1, y1, x2, y2 = map(int, s_box.xyxy[0])
+                    x, y, w, h = map(int, s_box.xywh[0])
+                    box_id = int(s_box.cls[0].item())               
+                    box_name = s_class_names[box_id]
+                    #print(f"Customized Printing - Detected traffic sign with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")
 
-                # Crop the detected region from the frame
-                cropped = frame[y1:y2, x1:x2]
+                    
+                    # Stop Sign
+                    if box_name.lower() == "stop":
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                        cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                        
+                        if box_conf>= best_stop_conf:
+                            best_stop_sign_box = s_box
+                            best_stop_conf = s_box.conf[0].item()
+                            print(f"Customized Printing - Best Stop sign with conf value: {best_stop_conf}")
 
-                # Optional: Preprocess the cropped image for better OCR
-                #gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
-                #_, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                        
 
-                lowercase_text= pytesseract.image_to_string(cropped).lower()
-                if 'speed' in lowercase_text and 'limit' in lowercase_text:
+                    # other signs
+                    else: 
+                        # Speed Limit Sign
+                        # Crop the detected region from the frame
+                        cropped = frame[y1:y2, x1:x2]
 
-                    # Extract the first number (e.g., 50)
-                    match = re.search(r'\b\d{1,2}\b', lowercase_text)
-                    if match and s_box.conf[0].item()>= best_speed_limit_conf:
-                        best_speed_limit_conf = s_box.conf[0].item()
-                        best_speed_limit_value = int(match.group())
-                        print(f"Customized Printing - Extracted speed limit: {best_speed_limit_value}")
+                        # Optional: Preprocess the cropped image for better OCR
+                        #gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+                        #_, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-        
-            
-
-            # best speed limit sign
-            best_speed_limit_sign_box = detect_best_box(s_class_names, s_results[0].boxes, "speedLimit", "contain", conf_threshold, True)
-            
+                        lowercase_text= pytesseract.image_to_string(cropped).lower()
+                        if 'speed' in lowercase_text and 'limit' in lowercase_text:                                                           
+                            # Extract the first number (e.g., 50)
+                            match = re.search(r'\b\d{1,2}\b', lowercase_text)
+                            if match and box_conf >= best_speed_limit_conf:                    
+                                best_speed_limit_conf = s_box.conf[0].item()
+                                best_speed_limit_value = int(match.group())
+                                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                                cv2.putText(frame, f'speedLimit{best_speed_limit_value} {box_conf:.2f}', (x1, y1 - 10),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                                print(f"Customized Printing - Extracted speed limit: {best_speed_limit_value} with conf value: {best_speed_limit_conf} ")
+                                    
                   
             # =====================================
             # Turning Signal Detection via accelerometer sensor and microphone
@@ -370,14 +413,11 @@ def main():
                   
             # -------end of speed limit sign------------------------------
             
-      
-            
-            frame = s_results[0].plot(img=frame, line_width=2)   
 
             #sets up a named window with full-screen support
-            #cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
+            cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
             #actually makes it full screen
-            #cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+            cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
             cv2.imshow("Annotated Frame", frame)
             # cv2.imwrite("annotated_frame.jpg", frame)
 
