@@ -2,6 +2,9 @@
 #???How to debug mode
 #???For speedLimit sign, is it possible to extract number from image.
 
+# Voting System between frames to improve accuracy
+# 1. Red light detection Example: if, in the last 3 frames, the red light was detected more than 50% of the time, then consider it as detected.
+
 #from voice import Voice
 import cv2
 from ultralytics import YOLO
@@ -163,6 +166,11 @@ def detect_best_box(class_names, boxes, box_name, match_mode, conf, is_print):
 
 def main():
 
+    # Voting Queue to store the last 3 frames
+    voting_queue = []
+    voting_queue_size = 3
+    voting_required_percentage = 0.5
+
     l_conf_threshold=0.5
     b_conf_threshold=0.5
     s_conf_threshold=0.4
@@ -196,7 +204,14 @@ def main():
         if not ret:
             break
         if (count % 5 == 0):
-
+            # Result ID require values:
+            # 1. Red/Green light
+            # 2. Stop sign
+            # 3. * Speed limit sign
+            # Scenario1: Driving up to intersection where there are three lights, currently all green
+            # Example (error included): R0 for current frame, but the last two were G0 and G0 so still green            
+            # Scenario2: Driving up to intersection where there are three lights, currently all red
+            result_id = ""
             # =================================
             # Traffic Lights Detection via YOLO
             # go, goLeft, stop, stopLeft, warning, warningLeft
@@ -263,6 +278,9 @@ def main():
                     is_green = detected_traffic_light_rgy_conf['green'] !=0 and detected_traffic_light_rgy_conf['green'] > detected_traffic_light_rgy_conf['red'] 
                     label = "Red" if is_red else "Green" if is_green else ""
 
+                    if is_red and result_id == "":
+                        result_id = "R"
+
                     # extract the bounding box coordinates
                     if is_red and best_red_bulb_box != None:
                         bx1, by1, bx2, by2 = best_red_bulb_box.xyxy[0].tolist()
@@ -285,7 +303,21 @@ def main():
                         cv2.rectangle(frame, (traffic_bulb_x1, traffic_bulb_y1), (traffic_bulb_x2, traffic_bulb_y2), (0, 255, 0), 2)
                         cv2.putText(frame, label, (int(traffic_bulb_x2), int(traffic_bulb_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-                    detected_traffic_light_rgy_confs.append(detected_traffic_light_rgy_conf)        
+                    detected_traffic_light_rgy_confs.append(detected_traffic_light_rgy_conf)
+
+                    #for b_box in b_results[0].boxes:
+                    #    if (b_box.conf[0].item() > 0.7): 
+                    #        # Extract details                                    
+                    #        bulb_id = int(b_box.cls[0].item())
+                    #        bulb_conf = b_box.conf[0].item()
+                    #        bulb_name= b_results[0].names[bulb_id]
+                    #        bulb_x1, bulb_y1, bulb_x2, bulb_y2 = b_box.xyxy[0].tolist()  
+                    #        print(f"Customized Printing - Detected traffic bulb: {bulb_name} with {bulb_conf:.2f} confidence at [{bulb_x1}, {bulb_y1}, {bulb_x2}, {bulb_y2}]")
+                    #        if ((bulb_name == 'go' or bulb_name == 'goLeft') and compare_red_green_conf['green'] < bulb_conf):
+                    #            compare_red_green_conf['green'] = bulb_conf
+                    #        elif ((bulb_name == 'stop' or bulb_name == "stopLeft") and compare_red_green_conf['red'] < bulb_conf):
+                    #            compare_red_green_conf['red'] = bulb_conf
+                    #detected_traffic_lights.append(compare_red_green_conf)             
                 
 
             # =====================================
