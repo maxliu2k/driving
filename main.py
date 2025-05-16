@@ -5,7 +5,7 @@
 # Voting System between frames to improve accuracy
 # 1. Red light detection Example: if, in the last 3 frames, the red light was detected more than 50% of the time, then consider it as detected.
 
-#from voice import Voice
+from voice import Voice
 import cv2
 from ultralytics import YOLO
 from utils import *
@@ -15,11 +15,9 @@ import math
 import threading
 import pytesseract
 import re
-
-"""
 import serial 
 import pynmea2 #pip install pyserial pynmea2
-"""
+
 
 
 def speak_async(voice, text):
@@ -108,8 +106,6 @@ def get_direction_and_acceleration():
     return direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz
 """
 
-
-"""
 def read_gps_speed(serial_port='/dev/serial0', baudrate=9600):
     # Open serial connection to GPS
     speed_mph = 0
@@ -125,7 +121,6 @@ def read_gps_speed(serial_port='/dev/serial0', baudrate=9600):
             except pynmea2.ParseError:
                 continue
     return speed_mph
-"""
 
 def detect_best_box(class_names, boxes, box_name, match_mode, conf, is_print):
     
@@ -175,7 +170,7 @@ def main():
     b_conf_threshold=0.5
     s_conf_threshold=0.4
 
-    #voice = Voice("piper.onnx")
+    voice = Voice("piper.onnx")
     count = 0
 
     # Load YOLO model
@@ -189,7 +184,7 @@ def main():
     cap = cv2.VideoCapture('videoTest/IMG_1411.mov')
     # cap = cv2.VideoCapture('videoTest/IMG_8767.mp4') # for speed limit sign
 
-    #voice.speak("Recording started!")
+    voice.speak("Recording started!")
 
     #initial
     is_red_traffic_light = False
@@ -234,7 +229,7 @@ def main():
                     box_name = l_class_names[box_id]
                     print(f"Customized Printing - Detected traffic light with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")
                 
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
                     cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
                     
@@ -413,10 +408,10 @@ def main():
                 if (detected_traffic_light_rgy_conf["red"] >= detected_traffic_light_rgy_conf["green"]):
                     is_red_traffic_light = True                 
                 
-            #if (is_red_traffic_light and not prev_is_red_traffic_light):
-            #    speak_async(voice, "red light detected")
-            #elif (not is_red_traffic_light and prev_is_red_traffic_light):
-            #    speak_async(voice, "red light no longer detected")
+            if (is_red_traffic_light and not prev_is_red_traffic_light):
+                speak_async(voice, "red light detected")
+            elif (not is_red_traffic_light and prev_is_red_traffic_light):
+                speak_async(voice, "red light no longer detected")
 
             # -------end of traffic light-----------------
             

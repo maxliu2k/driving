@@ -3,15 +3,15 @@
 # Hardware Checklist
 
 [X]  Raspberry Pi 5
-[ ]  Speaker
+[X]  Speaker
 [X]  Camera
-[ ]  Microphone
+[X]  Microphone
 [X]  Accelerometer
      - Direction
      - Acceleration/Speed
      - https://learn.adafruit.com/mpu6050-6-dof-accelerometer-and-gyro/python-and-circuitpython
-[ ]  Battery Source
-[ ]  GPS Sensor
+[X]  Battery Source
+[X]  GPS Sensor
 [ ]  *Case
 
 
@@ -49,9 +49,31 @@
     ```
 
 # How to Automate the Programs with Systemctl
+    ```bash
+    sudo nano /etc/systemd/system/[program name].service
+    ```
 
+    ```bash
+    [Unit]
+    Description=My Python Server
+    After=network.target
 
+    [Service]
+    Type=simple
+    User=pi
+    WorkingDirectory=/home/pi/myproject
+    ExecStart=/home/pi/myvenv/bin/python /home/pi/myproject/server.py
+    Restart=on-failure
 
+    [Install]
+    WantedBy=multi-user.target
+    ```
+
+    ```bash
+    sudo systemctl daemon-reload
+    sudo systemctl start [program name]
+    sudo systemctl enable [program name]
+    ```
 
 
 
