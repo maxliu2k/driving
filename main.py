@@ -15,16 +15,31 @@ import math
 import threading
 import pytesseract
 import re
-import serial 
-import pynmea2 #pip install pyserial pynmea2
+import serial
+import adafruit_gps
+import time
+from collections import deque
+# import pynmea2 #pip install pyserial pynmea2
 
 
 
 def speak_async(voice, text):
     threading.Thread(target=voice.speak, args=(text,), daemon=True).start()
 
+# ===== GPS Setup =====
 
-"""
+uart = serial.Serial("/dev/ttyUSB0", baudrate=9600, timeout=30)
+
+gps = adafruit_gps.GPS(uart, debug=False)
+
+gps.send_command(b'PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0')
+
+gps.send_command(b'PMTK220,1000')
+
+last_print = time.monotonic()
+
+
+
 # =============================== 
 # Accelerometer (MPU6050) Setup
 # ===============================
@@ -54,6 +69,13 @@ Az_offset = -1.11
 Gx_offset = 0.29
 Gy_offset = 0.07
 Gz_offset = 0.09
+
+# Filtering and Thresholds
+GYRO_WINDOW = 10
+GYRO_THRESHOLD = 5.0 # degrees/sec
+
+# Deques for storing gyro data
+gyro_buffer = deque(maxlen=GYRO_WINDOW)
 
 def MPU_Init():
     bus.write_byte_data(Device_Address, SMPLRT_DIV, 7)
@@ -104,23 +126,45 @@ def get_direction_and_acceleration():
         direction = "Stationary"
     
     return direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz
-"""
 
-def read_gps_speed(serial_port='/dev/serial0', baudrate=9600):
-    # Open serial connection to GPS
-    speed_mph = 0
-    with serial.Serial(serial_port, baudrate, timeout=1) as ser:
-        while True:
-            try:
-                line = ser.readline().decode('ascii', errors='replace')
-                if line.startswith('$GPRMC'):
-                    msg = pynmea2.parse(line)
-                    if msg.status == 'A':  # A = valid, V = invalid
-                        speed_knots = float(msg.spd_over_grnd)
-                        speed_mph = speed_knots * 1.15078
-            except pynmea2.ParseError:
-                continue
-    return speed_mph
+def detect_turn():
+    """
+    Design Notes:
+    - sometimes the road can have bumps so we might need a filter
+    - primarily rely on gyro (yaw rate) to detect turns
+        - either y or z axis, tbd
+    """
+    _, _, _, Gx, Gy, Gz = get_motion_data()
+    gyro_buffer.append(Gy)
+
+    # Compute moving average
+    gyro_avg = sum(gyro_buffer) / len(gyro_buffer)
+
+    # Determine the turn:
+    if abs(gyro_avg) > GYRO_THRESHOLD:
+        if gyro_avg > 0:
+            return "Right Turn"
+        else:
+            return "Left Turn"
+    else:
+        return "Straight"
+
+
+# def read_gps_speed(serial_port='/dev/serial0', baudrate=9600):
+#     # Open serial connection to GPS
+#     speed_mph = 0
+#     with serial.Serial(serial_port, baudrate, timeout=1) as ser:
+#         while True:
+#             try:
+#                 line = ser.readline().decode('ascii', errors='replace')
+#                 if line.startswith('$GPRMC'):
+#                     msg = pynmea2.parse(line)
+#                     if msg.status == 'A':  # A = valid, V = invalid
+#                         speed_knots = float(msg.spd_over_grnd)
+#                         speed_mph = speed_knots * 1.15078
+#             except pynmea2.ParseError:
+#                 continue
+#     return speed_mph
 
 def detect_best_box(class_names, boxes, box_name, match_mode, conf, is_print):
     
@@ -377,7 +421,27 @@ def main():
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                                 print(f"Customized Printing - Extracted speed limit: {best_speed_limit_value} with conf value: {best_speed_limit_conf} ")
                                     
-                  
+                                gps.update()
+                                current = time.monotonic()
+                                if current - last_print >= 1.0:
+                                    last_print = current
+                                    if not gps.has_fix:
+                                        print('Waiting for fix...')
+                                    else:
+                                        print('=' * 40)  # Print a separator line.
+                                        print('Latitude: {0:.6f} degrees'.format(gps.latitude))
+                                        print('Longitude: {0:.6f} degrees'.format(gps.longitude))
+
+                                        # Get the speed
+                                        if gps.speed_knots is not None:
+                                            mph = gps.speed_knots * 1.15078
+                                            print('Speed: {0:.2f} mph'.format(mph))
+
+                                            # Check if the speed exceeds the limit
+                                            if mph > best_speed_limit_value:
+                                                voice.speak("Slow down!")
+                                        else:
+                                            print('Speed: Not available')
             # =====================================
             # Turning Signal Detection via accelerometer sensor and microphone
             # ==========================================

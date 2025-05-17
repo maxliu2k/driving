@@ -1,4 +1,13 @@
-# Driving
+# Driving Project Checklist (5/16/25)
+[ ] Record all the voice lines spoken by main.py so that we can also allow the flutter app to vocalize
+[ ] Find some method, however janky, to mount in a way for the rpi to see the road
+[ ] Test the gps_test.py file to make sure speed testing works
+[ ] For the flutter app tweak visuals/text as needed (also includes app store description)
+[ ] Determine which competitions so that we can nail down deliverables
+[ ] Run the turn detection in a separate thread (or if on main, somewhere where it does it constantly)
+## Optionals:
+[ ] Train improved versions of the AI models
+[ ] Set up the systemctls to automate the python scripts on the rpi
 
 # Hardware Checklist
 
