@@ -234,6 +234,7 @@ def main():
     is_red_traffic_light = False
     is_stop_sign = False
     #is_speed_limit_sign = False
+    blinker_on = False
 
 
     while cap.isOpened():
@@ -445,12 +446,16 @@ def main():
             # =====================================
             # Turning Signal Detection via accelerometer sensor and microphone
             # ==========================================
-  
             # Get accelerometer data
             # direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
             # print(f"Accel -> Direction: {direction}, Accel: {accel_magnitude:.2f}, "
             #     f"Ax: {(Ax+Ax_offset):.2f}, Ay: {(Ay+Ay_offset):.2f}, Az: {(Az+Az_offset):.2f}")
             # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
+            detected_turn = detect_turn()
+            print(f"Detected Turn: {detected_turn}")
+            if not blinker_on and detected_turn != "Straight":
+                voice.speak(f"Don't forget to turn on your turn signal when turning!")
+            
             # if direction == "Forward" and accel_magnitude > 1.5:
             #     voice.speak("Slow down!")
             
