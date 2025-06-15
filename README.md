@@ -6,7 +6,11 @@
 [ ] Determine which competitions so that we can nail down deliverables
 [ ] Run the turn detection in a separate thread (or if on main, somewhere where it does it constantly)
 ## Optionals:
+<<<<<<< HEAD
+[ ] Train improved versions of the AI models
+=======
 [ ] Train improved versions of the AI models (in-progress)
+>>>>>>> 91bd2e7e22055a0fd1e68e628ffc89febe02c280
 [ ] Set up the systemctls to automate the python scripts on the rpi
 
 # Hardware Checklist
