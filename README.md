@@ -3,11 +3,11 @@
 [ ] Find some method, however janky, to mount in a way for the rpi to see the road
 [ ] Test the gps_test.py file to make sure speed testing works
 [ ] For the flutter app tweak visuals/text as needed (also includes app store description)
-[ ] Determine which competitions so that we can nail down deliverables
+[X] Determine which competitions so that we can nail down deliverables (Congressional App Challenge, locals)
 [ ] Run the turn detection in a separate thread (or if on main, somewhere where it does it constantly)
 ## Optionals:
-[ ] Train improved versions of the AI models (in-progress)
-[ ] Set up the systemctls to automate the python scripts on the rpi
+[-] Train improved versions of the AI models (in-progress)
+[X] Set up the systemctls to automate the python scripts on the rpi
 
 # Hardware Checklist
 
@@ -23,6 +23,8 @@
 [X]  GPS Sensor
 [ ]  *Case
 
+https://doc-hosting.flycricket.io/safestudent-driving-privacy-policy/7b806e17-6135-49f2-ab7d-c87ca4a062df/privacy
+https://doc-hosting.flycricket.io/safestudent-driving-terms-of-use/1c5412f5-1a90-4afa-a9e6-6dcdc683c3f3/terms
 
 # Raspberry Pi Integration Steps
 
@@ -59,19 +61,19 @@
 
 # How to Automate the Programs with Systemctl
     ```bash
-    sudo nano /etc/systemd/system/[program name].service
+    sudo nano /etc/systemd/system/driving.service
     ```
 
     ```bash
     [Unit]
-    Description=My Python Server
+    Description=Start Driving Assistant
     After=network.target
 
     [Service]
     Type=simple
-    User=pi
-    WorkingDirectory=/home/pi/myproject
-    ExecStart=/home/pi/myvenv/bin/python /home/pi/myproject/server.py
+    User=maxliu2k
+    WorkingDirectory=/home/maxliu2k/Driving/
+    ExecStart=/home/maxliu2k/Driving/venv/bin/python/home/maxliu2k/Driving/main.py
     Restart=on-failure
 
     [Install]

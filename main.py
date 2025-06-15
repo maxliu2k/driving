@@ -1,7 +1,3 @@
-#???How to use simshow function to show in one window
-#???How to debug mode
-#???For speedLimit sign, is it possible to extract number from image.
-
 # Voting System between frames to improve accuracy
 # 1. Red light detection Example: if, in the last 3 frames, the red light was detected more than 50% of the time, then consider it as detected.
 
@@ -19,12 +15,16 @@ import serial
 import adafruit_gps
 import time
 from collections import deque
+import queue
 # import pynmea2 #pip install pyserial pynmea2
 
-
+voice_queue = queue.Queue()
 
 def speak_async(voice, text):
     threading.Thread(target=voice.speak, args=(text,), daemon=True).start()
+
+def speak_queued(text):
+    voice_queue.put(text)
 
 # ===== GPS Setup =====
 
@@ -206,8 +206,7 @@ def detect_best_box(class_names, boxes, box_name, match_mode, conf, is_print):
 def main():
 
     # Voting Queue to store the last 3 frames
-    voting_queue = []
-    voting_queue_size = 3
+    voting_queue = deque(maxlen=3)
     voting_required_percentage = 0.5
 
     l_conf_threshold=0.5
@@ -215,6 +214,12 @@ def main():
     s_conf_threshold=0.4
 
     voice = Voice("piper.onnx")
+    def voice_worker():
+        while True:
+            text = voice_queue.get() # Block until an item is available
+            voice.speak(text)
+            voice_queue.task_done()
+    threading.Thread(target=voice_worker, daemon=True).start()
     count = 0
 
     # Load YOLO model
@@ -478,9 +483,11 @@ def main():
                     is_red_traffic_light = True                 
                 
             if (is_red_traffic_light and not prev_is_red_traffic_light):
-                speak_async(voice, "red light detected")
+                # speak_async(voice, "red light detected")
+                speak_queued("red light detected")
             elif (not is_red_traffic_light and prev_is_red_traffic_light):
-                speak_async(voice, "red light no longer detected")
+                # speak_async(voice, "red light no longer detected")
+                speak_queued("red light no longer detected")
 
             # -------end of traffic light-----------------
             
