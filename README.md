@@ -96,4 +96,10 @@
         - Score
             - 0-100 scale
             - based on mistakes and time
-            - 
+
+# Notes:
+- in the event your PAT expires and you have to make a new one, you can do so by running the following command:
+```bash
+git config --global credential.helper store
+git pull
+```
