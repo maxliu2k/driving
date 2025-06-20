@@ -1,3 +1,12 @@
+# questions:
+# 1. pytesseract vs easyocr. Pytesseract is fast, but its accuracy is quite poor. SpeedLimit does not work, need other approach!
+# 2. Is there a way to speed up the video playback for demo purposes?
+
+# To do:
+# detect blinker
+
+#=================================================
+
 # Voting System between frames to improve accuracy
 # 1. Red light detection Example: if, in the last 3 frames, the red light was detected more than 50% of the time, then consider it as detected.
 
@@ -5,11 +14,15 @@ from voice import Voice
 import cv2
 from ultralytics import YOLO
 from utils import *
-#import smbus
+import smbus
 from time import sleep
 import math
 import threading
 import pytesseract
+#pip install rapidfuzz
+#from rapidfuzz import fuzz
+#pip install easyocr
+#import easyocr
 import re
 import serial
 import adafruit_gps
@@ -19,9 +32,9 @@ import queue
 # import pynmea2 #pip install pyserial pynmea2
 
 voice_queue = queue.Queue()
-
 def speak_async(voice, text):
     threading.Thread(target=voice.speak, args=(text,), daemon=True).start()
+
 
 def speak_queued(text):
     voice_queue.put(text)
@@ -128,12 +141,12 @@ def get_direction_and_acceleration():
     return direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz
 
 def detect_turn():
-    """
-    Design Notes:
-    - sometimes the road can have bumps so we might need a filter
-    - primarily rely on gyro (yaw rate) to detect turns
-        - either y or z axis, tbd
-    """
+
+    #Design Notes:
+    #- sometimes the road can have bumps so we might need a filter
+    #- primarily rely on gyro (yaw rate) to detect turns
+    #    - either y or z axis, tbd
+
     _, _, _, Gx, Gy, Gz = get_motion_data()
     gyro_buffer.append(Gy)
 
@@ -166,38 +179,6 @@ def detect_turn():
 #                 continue
 #     return speed_mph
 
-def detect_best_box(class_names, boxes, box_name, match_mode, conf, is_print):
-    
-    detected_boxes=[]
-    if match_mode == "equal":
-        detected_boxes = [
-            box for box in boxes
-            if class_names[int(box.cls[0].item())].lower()==box_name.lower() and box.conf[0].item() > conf]
-    if match_mode == "contain":
-        detected_boxes = [
-            box for box in boxes
-            if box_name.lower() in class_names[int(box.cls[0].item())].lower() and box.conf[0].item() > conf]
-
-    # If any such boxes exist, get the one with the highest confidence
-    if detected_boxes:
-        best_detected_box = max(detected_boxes, key=lambda b: b.conf[0].item())
-        
-        # Extract details
-        best_detected_box_id = int(best_detected_box.cls[0].item())
-        best_detected_box_conf = best_detected_box.conf[0].item()
-        best_detected_box_name = class_names[best_detected_box_id]
-        best_detected_box_x1, best_detected_box_y1, best_detected_box_x2, best_detected_box_y2 = best_detected_box.xyxy[0].tolist()
-        
-        if is_print == True:
-            print(f"Customized Printing - Detected '{box_name}' box with best confidence: {best_detected_box_name} with {best_detected_box_conf:.2f} confidence at [{best_detected_box_x1}, {best_detected_box_y1}, {best_detected_box_x2}, {best_detected_box_y2}]")
-    else:
-        best_detected_box = None
-        if is_print == True:
-            print(f"Customized Printing - No '{box_name}' box found.")
-
-    return best_detected_box
-
-
 
 # ========================================
 # Main function integrating vision and IMU
@@ -207,11 +188,19 @@ def main():
 
     # Voting Queue to store the last 3 frames
     voting_queue = deque(maxlen=3)
+
     voting_required_percentage = 0.5
 
-    l_conf_threshold=0.5
-    b_conf_threshold=0.5
-    s_conf_threshold=0.4
+    l_conf_threshold=0.5 #Traffic light confidence threshold value
+    b_conf_threshold=0.5 #Traffic light bulb confidence threshold value
+    s_conf_threshold=0.4 #Traffic sign confidence threshold value
+
+    diff_conf = 0.1  #To be used to find dominant color of traffic bulb
+    big_font_scale = 0.6  #To be used when plot 
+    small_font_scale = 0.4  #To be used when plot 
+    thickness = 2 #To be used when plot 
+    fuzzy_threshold = 80  #To be used when compare words retrieved from traffic sign with keyword "speed"/"limit"
+    driving_speed=0
 
     voice = Voice("piper.onnx")
     def voice_worker():
@@ -220,6 +209,7 @@ def main():
             voice.speak(text)
             voice_queue.task_done()
     threading.Thread(target=voice_worker, daemon=True).start()
+    
     count = 0
 
     # Load YOLO model
@@ -228,19 +218,26 @@ def main():
     s_model = YOLO('bestsigns.pt') 
 
     # Start video stream
-    # cap = cv2.VideoCapture(0)
+    #cap = cv2.VideoCapture(0)
     # alternatively, use a video file 
-    cap = cv2.VideoCapture('videoTest/IMG_1411.mov')
-    # cap = cv2.VideoCapture('videoTest/IMG_8767.mp4') # for speed limit sign
-
+    cap = cv2.VideoCapture('videoTest/TrafficLights/IMG_8754.mp4')
+    #cap = cv2.VideoCapture('videoTest/TrafficSigns/IMG_8754.mp4')
     voice.speak("Recording started!")
 
-    #initial
-    is_red_traffic_light = False
-    is_stop_sign = False
-    #is_speed_limit_sign = False
-    blinker_on = False
 
+    # Initialize traffic_control_flag and last_traffic_control_flag, which will be used to trigger voice. 
+    # The traffic_control_name will be used when key:name mapping needed.
+    last_traffic_control_flag = {"RedTrafficLight": False, "RedLeftTrafficLight": False, "StopTrafficSign": False, "StopAheadTrafficSign": False, "YieldTrafficSign": False, "YieldAheadTrafficSign": False, "SpeedLimitTrafficSign": False}
+    traffic_control_flag = {"RedTrafficLight": False, "RedLeftTrafficLight": False, "StopTrafficSign": False, "StopAheadTrafficSign": False, "YieldTrafficSign": False, "YieldAheadTrafficSign": False, "SpeedLimitTrafficSign": False}
+    traffic_control_name = {"RedTrafficLight": "red traffic light", 
+                    "RedLeftTrafficLight": "red left traffic light",
+                    "StopTrafficSign": "stop traffic sign", 
+                    "StopAheadTrafficSign": "stop ahead traffic sign", 
+                    "YieldTrafficSign": "yield traffic sign", 
+                    "YieldAheadTrafficSign": "yield ahead traffic sign", 
+                    "SpeedLimitTrafficSign": "speed limit traffic sign"}
+    blinker_on = False
+    
 
     while cap.isOpened():
         count += 1
@@ -248,7 +245,9 @@ def main():
         ret, frame = cap.read()
         if not ret:
             break
-        if (count % 5 == 0):
+
+        if (count % 5 == 0):          
+
             # Result ID require values:
             # 1. Red/Green light
             # 2. Stop sign
@@ -257,8 +256,14 @@ def main():
             # Example (error included): R0 for current frame, but the last two were G0 and G0 so still green            
             # Scenario2: Driving up to intersection where there are three lights, currently all red
             result_id = ""
+
+            # Each iterate, reset traffic_control_flag and blinker_on for each frame
+            for key in traffic_control_flag:
+                traffic_control_flag[key] = False
+            blinker_on = False
+
             # =================================
-            # Traffic Lights Detection via YOLO
+            # Function 1: Traffic Lights Detection via YOLO
             # go, goLeft, stop, stopLeft, warning, warningLeft
             # =================================
 
@@ -267,7 +272,7 @@ def main():
             l_class_names = l_model.names            
             #frame = l_results[0].plot(img=frame, line_width=2) 
 
-            detected_traffic_light_rgy_confs = []
+            # For each traffic light
             for l_box in l_results[0].boxes:
                 if l_box.conf[0] > l_conf_threshold:
 
@@ -277,11 +282,11 @@ def main():
                     x, y, w, h = map(int, l_box.xywh[0])
                     box_id = int(l_box.cls[0].item())               
                     box_name = l_class_names[box_id]
-                    print(f"Customized Printing - Detected traffic light with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")
+                    print(f"===========================Detected traffic light with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")
                 
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                    cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
+                    cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10), 
+                        cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
                     
                     # crop the image to the traffic light
                     cropped_traffic_light_frame = crop_image(frame, (x - w/2, y - h/2, w, h))
@@ -300,73 +305,114 @@ def main():
 
                     # Identify the bulb in the cropped image
                     b_results = b_model(cropped_traffic_light_frame)
-                    cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
+                    #cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
                     #cv2.imshow("Cropped Frame", cropped_traffic_light_frame)   
 
-                    b_class_names = b_model.names       
+                    b_class_names = b_model.names   
+                    
+                    # Initialize. Handle "forward light bulb" and "left light bulb" separately
+                    best_rgy_conf = {'red': 0, 'green': 0,  'yellow': 0}  
+                    best_rgy_left_conf = {'red': 0, 'green': 0,  'yellow': 0}
+                    detected_rgy_boxes = {'red': [], 'green': [],  'yellow': []}  #"forward light bulb"                                           
+                    detected_rgy_left_boxes = {'red': [], 'green': [],  'yellow': []}  #"left light bulb"    
 
-                    best_red_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "stop", "contain", b_conf_threshold, False)                        
-                    best_green_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "go", "contain", b_conf_threshold, False)
-                    #best_yellow_bulb_box = detect_best_box(b_class_names, b_results[0].boxes, "warning", "contain", 0.5, False)
+                    # Iterate through all detected traffic light bulbs, 
+                    # append them to detected_rgy_boxes/detected_rgy_left_boxes accordingly, 
+                    # and update best_rgy_conf/best_rgy_left_conf with the highest confidence scores
+                    for b_box in b_results[0].boxes:
+                        if b_box.conf[0] > b_conf_threshold:  
+                            b_box_conf = b_box.conf[0].item()
+                            b_box_id = int(b_box.cls[0].item())               
+                            b_box_name = b_class_names[b_box_id]                      
+                            match b_box_name.lower():
+                                case "stop":
+                                    if b_box_conf>best_rgy_conf['red']:
+                                        best_rgy_conf['red'] = b_box_conf
+                                    detected_rgy_boxes['red'].append(b_box)
+                                case "stopleft":
+                                    if b_box_conf>best_rgy_left_conf['red']:
+                                        best_rgy_left_conf['red'] = b_box_conf
+                                    detected_rgy_left_boxes['red'].append(b_box)
+                                case "go":
+                                    if b_box_conf>best_rgy_conf['green']:
+                                        best_rgy_conf['green'] = b_box_conf
+                                    detected_rgy_boxes['green'].append(b_box)
+                                case "goleft":
+                                    if b_box_conf>best_rgy_left_conf['green']:
+                                        best_rgy_left_conf['green'] = b_box_conf
+                                    detected_rgy_left_boxes['green'].append(b_box)
+                                case "warning":
+                                    if b_box_conf>best_rgy_conf['yellow']:
+                                        best_rgy_conf['yellow'] = b_box_conf 
+                                    detected_rgy_boxes['yellow'].append(b_box)                              
+                                case "warningleft":
+                                    if b_box_conf>best_rgy_left_conf['yellow']:
+                                        best_rgy_left_conf['yellow'] = b_box_conf
+                                    detected_rgy_left_boxes['yellow'].append(b_box)       
 
+                    #for color, conf in best_rgy_conf.items():
+                    #    print(f"===========================Detected traffic {color} bulb with {conf:.2f} confidence")
+                    #for color, conf in best_rgy_left_conf.items():
+                    #    print(f"===========================Detected traffic {color} left bulb with {conf:.2f} confidence")
+                    
+                    # Will be used to Store all bulb boxes which will be plotted
+                    plot_boxes = []
 
-                    detected_traffic_light_rgy_conf = {'red': 0, 'green': 0, 'yellow': 0}                   
-                    if best_red_bulb_box != None:
-                        detected_traffic_light_rgy_conf['red'] = best_red_bulb_box.conf[0].item()                    
-                    if best_green_bulb_box != None:
-                        detected_traffic_light_rgy_conf['green'] = best_green_bulb_box.conf[0].item()
-                    #if best_yellow_bulb_box != None:
-                    #    detected_traffic_light_rgy_conf['yellow'] = best_yellow_bulb_box.conf[0].item()
-                   
-                    # determine the color and label
-                    is_red = detected_traffic_light_rgy_conf['red'] !=0 and detected_traffic_light_rgy_conf['red'] >= detected_traffic_light_rgy_conf['green']
-                    is_green = detected_traffic_light_rgy_conf['green'] !=0 and detected_traffic_light_rgy_conf['green'] > detected_traffic_light_rgy_conf['red'] 
-                    label = "Red" if is_red else "Green" if is_green else ""
+                    # Determine the dominant color of the "forward light bulb", since only one of red, yellow, or green can be active at a time. 
+                    # Then, add all forward bulbs of the dominant color to plot_boxes. 
+                    # If the dominant color is red, set traffic_control_flag['RedTrafficLight'] to True.
+                    for key, value in best_rgy_conf.items():
+                        if all(value >= other_val + diff_conf for other_k, other_val in best_rgy_conf.items() if other_k != key): 
+                            if key=="red" and result_id == "":
+                                traffic_control_flag["RedTrafficLight"] = True
+                                result_id="R"
+                            plot_boxes.extend(detected_rgy_boxes[key])     
 
-                    if is_red and result_id == "":
-                        result_id = "R"
+                    # Apply the same logic to handle the "left light bulb".
+                    for key, value in best_rgy_left_conf.items():
+                        if all(value >= other_val + diff_conf for other_k, other_val in best_rgy_left_conf.items() if other_k != key):
+                            if key=="red" and result_id == "":
+                                traffic_control_flag["RedLeftTrafficLight"] = True
+                                result_id="R"
+                            plot_boxes.extend(detected_rgy_left_boxes[key])        
 
-                    # extract the bounding box coordinates
-                    if is_red and best_red_bulb_box != None:
-                        bx1, by1, bx2, by2 = best_red_bulb_box.xyxy[0].tolist()
-                    elif is_green and best_green_bulb_box != None:
-                        bx1, by1, bx2, by2 = best_green_bulb_box.xyxy[0].tolist()
-                    else:
-                        continue
-                    # adjust the coordinates to the original frame
-                    traffic_bulb_x1 = int(bx1 + offset_x)
-                    traffic_bulb_y1 = int(by1 + offset_y)
-                    traffic_bulb_x2 = int(bx2 + offset_x)
-                    traffic_bulb_y2 = int(by2 + offset_y)
+                    # Plot all boxes in plot_boxes
+                    for plot_box in plot_boxes:
+                        #p_box_conf = plot_box.conf[0].item()
+                        p_x1, p_y1, p_x2, p_y2 = map(int, plot_box.xyxy[0])
+                        #p_x, p_y, p_w, p_h = map(int, plot_box.xywh[0])
+                        p_box_id = int(plot_box.cls[0].item())               
+                        p_box_name = b_class_names[p_box_id]  
+                        
 
-                    # Draw the bounding box and label on the original frame over just the bulb
-                    if is_red:
-                        cv2.rectangle(frame, (traffic_bulb_x1, traffic_bulb_y1), (traffic_bulb_x2, traffic_bulb_y2), (0, 0, 255), 2)
-                        cv2.putText(frame, label, (int(traffic_bulb_x2), int(traffic_bulb_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                        p_x1 = int(p_x1 + offset_x)
+                        p_y1 = int(p_y1 + offset_y)
+                        p_x2 = int(p_x2 + offset_x)
+                        p_y2 = int(p_y2 + offset_y)
 
-                    if is_green:
-                        cv2.rectangle(frame, (traffic_bulb_x1, traffic_bulb_y1), (traffic_bulb_x2, traffic_bulb_y2), (0, 255, 0), 2)
-                        cv2.putText(frame, label, (int(traffic_bulb_x2), int(traffic_bulb_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-                    detected_traffic_light_rgy_confs.append(detected_traffic_light_rgy_conf)
-
-                    #for b_box in b_results[0].boxes:
-                    #    if (b_box.conf[0].item() > 0.7): 
-                    #        # Extract details                                    
-                    #        bulb_id = int(b_box.cls[0].item())
-                    #        bulb_conf = b_box.conf[0].item()
-                    #        bulb_name= b_results[0].names[bulb_id]
-                    #        bulb_x1, bulb_y1, bulb_x2, bulb_y2 = b_box.xyxy[0].tolist()  
-                    #        print(f"Customized Printing - Detected traffic bulb: {bulb_name} with {bulb_conf:.2f} confidence at [{bulb_x1}, {bulb_y1}, {bulb_x2}, {bulb_y2}]")
-                    #        if ((bulb_name == 'go' or bulb_name == 'goLeft') and compare_red_green_conf['green'] < bulb_conf):
-                    #            compare_red_green_conf['green'] = bulb_conf
-                    #        elif ((bulb_name == 'stop' or bulb_name == "stopLeft") and compare_red_green_conf['red'] < bulb_conf):
-                    #            compare_red_green_conf['red'] = bulb_conf
-                    #detected_traffic_lights.append(compare_red_green_conf)             
-                
+                        match p_box_name:
+                            case "stop":
+                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 0, 255), thickness)
+                                cv2.putText(frame, '', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness) 
+                            case "stopLeft":
+                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 0, 255), thickness)
+                                cv2.putText(frame, 'left', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness)
+                            case "go":
+                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 255, 0), thickness)
+                                cv2.putText(frame, '', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
+                            case "goLeft":
+                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 255, 0), thickness)
+                                cv2.putText(frame, 'left', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
+                            case "warning":
+                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 255, 255), thickness)
+                                cv2.putText(frame, '', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness)                           
+                            case "warningLeft":
+                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 255, 255), thickness)
+                                cv2.putText(frame, 'left', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness)     
+                            
 
             # =====================================
-            # Traffic Signs Detection via YOLO
+            # Function 2: Traffic Signs Detection via YOLO
             # stop/stopAhead Signs
             # Speed Limit Sign: Passive Reminding using GPS sensor
             # ======================================
@@ -376,12 +422,9 @@ def main():
             s_class_names = s_model.names
             #frame = s_results[0].plot(img=frame, line_width=2) 
 
-
-            # Loop each box to find best Stop sign and Speed Limit sign
+            # Loop each box to find "stop", "stopAhead", "yield", "yieldAhead" signs and speed limit signs
             best_speed_limit_value = 0
             best_speed_limit_conf = 0
-            best_stop_conf = 0
-            best_stop_sign_box = None
             for s_box in s_results[0].boxes:
                 if s_box.conf[0] > s_conf_threshold:
                     box_conf = s_box.conf[0].item()
@@ -389,67 +432,112 @@ def main():
                     x, y, w, h = map(int, s_box.xywh[0])
                     box_id = int(s_box.cls[0].item())               
                     box_name = s_class_names[box_id]
-                    #print(f"Customized Printing - Detected traffic sign with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")
+
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                    cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)
+                    
+                    # "stop", "stopAhead", "yield", "yieldAhead" signs
+                    if box_name in ["stop", "stopAhead", "yield", "yieldAhead"]:
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                        cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)   
+                        print(f"===========================Detected {box_name} with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")                                   
+                        match box_name:
+                            case "stop":
+                                traffic_control_flag["StopTrafficSign"]=True
+                            case "stopAhead":
+                                traffic_control_flag["StopAheadTrafficSign"]=True
+                            case "yield":
+                                traffic_control_flag["YieldTrafficSign"]=True
+                            case "yieldAhead":
+                                traffic_control_flag["YieldAheadTrafficSign"]=True
 
                     
-                    # Stop Sign
-                    if box_name.lower() == "stop":
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                        cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-                        
-                        if box_conf>= best_stop_conf:
-                            best_stop_sign_box = s_box
-                            best_stop_conf = s_box.conf[0].item()
-                            print(f"Customized Printing - Best Stop sign with conf value: {best_stop_conf}")
-
-                        
-
-                    # other signs
+                    # Speed Limit Signs
                     else: 
-                        # Speed Limit Sign
+                        print(f"===========================Detected {box_name} with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")                                   
+                        
                         # Crop the detected region from the frame
                         cropped = frame[y1:y2, x1:x2]
 
-                        # Optional: Preprocess the cropped image for better OCR
+                        #1. Try pytesseract first
                         #gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
-                        #_, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                        #gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_LINEAR)
+                        #_, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
+                        #processed = cv2.medianBlur(thresh, 3)
+                        config = '--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                        all_lowercase_text = pytesseract.image_to_string(cropped, config=config).lower()
+                        print(f"===========================Extracted sign words using pytesseract: {all_lowercase_text}")
+                        
 
-                        lowercase_text= pytesseract.image_to_string(cropped).lower()
-                        if 'speed' in lowercase_text and 'limit' in lowercase_text:                                                           
-                            # Extract the first number (e.g., 50)
-                            match = re.search(r'\b\d{1,2}\b', lowercase_text)
-                            if match and box_conf >= best_speed_limit_conf:                    
-                                best_speed_limit_conf = s_box.conf[0].item()
-                                best_speed_limit_value = int(match.group())
-                                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                                cv2.putText(frame, f'speedLimit{best_speed_limit_value} {box_conf:.2f}', (x1, y1 - 10),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-                                print(f"Customized Printing - Extracted speed limit: {best_speed_limit_value} with conf value: {best_speed_limit_conf} ")
-                                    
-                                gps.update()
-                                current = time.monotonic()
-                                if current - last_print >= 1.0:
-                                    last_print = current
-                                    if not gps.has_fix:
-                                        print('Waiting for fix...')
-                                    else:
-                                        print('=' * 40)  # Print a separator line.
-                                        print('Latitude: {0:.6f} degrees'.format(gps.latitude))
-                                        print('Longitude: {0:.6f} degrees'.format(gps.longitude))
+                        """
+                        #Use fuzz match to find "speed" and "limit" keyword"
+                        words = all_lowercase_text.split()                                              
+                        target_words = ['speed', 'limit']
+                        found_targets = {target: False for target in target_words}
+                        # Check each word in OCR result against each target word
+                        for word in words:
+                            for target in target_words:
+                                if not found_targets[target] and fuzz.ratio(word, target) > 0.8:
+                                    found_targets[target] = True                
 
-                                        # Get the speed
-                                        if gps.speed_knots is not None:
-                                            mph = gps.speed_knots * 1.15078
-                                            print('Speed: {0:.2f} mph'.format(mph))
+                        
+                        #2. Then try easyocr if pytesseract does not work
+                        if not found_targets['speed'] or not found_targets['limit']:   
+                            
+                            reader = easyocr.Reader(['en'])
+                            results = reader.readtext(cropped)
+                            all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
+                            print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
+                            if 'speed' in all_lowercase_text:
+                                found_targets['speed'] = True
+                            if 'limit' in all_lowercase_text:
+                                found_targets['limit'] = True
 
-                                            # Check if the speed exceeds the limit
-                                            if mph > best_speed_limit_value:
-                                                voice.speak("Slow down!")
-                                        else:
-                                            print('Speed: Not available')
+                        
+                        if found_targets['speed'] and found_targets['limit']:   
+
+                        """
+
+                        if 'speed' in all_lowercase_text and 'limit' in all_lowercase_text:
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
+                            cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
+                            traffic_control_flag["SpeedLimitTrafficSign"]=True
+
+                            match = re.search(r'\b\d{1,2}\b', all_lowercase_text)
+                            if match:
+                                speed_limit_value = int(match.group())                                
+                                if box_conf >= best_speed_limit_conf:                    
+                                    best_speed_limit_conf = s_box.conf[0].item()
+                                    best_speed_limit_value = speed_limit_value
+                                print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  
+                                                       
+                        
+            gps.update()
+            current = time.monotonic()
+            if current - last_print >= 1.0:
+                last_print = current
+                if not gps.has_fix:
+                    print('===========================GPS Waiting for fix...')
+                else:
+                    print('===========================GPS shows Latitude: {0:.6f} degrees'.format(gps.latitude))
+                    print('===========================GPS shows Longitude: {0:.6f} degrees'.format(gps.longitude))
+
+                    # Get the speed
+                    if gps.speed_knots is not None:
+                        driving_mph = gps.speed_knots * 1.15078
+                        print('===========================Driving Speed: {0:.2f} mph'.format(driving_mph))
+                        # Check if the speed exceeds the limit
+                        #if driving_mph > best_speed_limit_value:
+                        #    voice.speak("Slow down!")
+                    else:
+                        print('===========================Driving speed is not available')
+            
+
             # =====================================
-            # Turning Signal Detection via accelerometer sensor and microphone
+            # Function 3: Turning Signal Detection via accelerometer sensor and microphone
             # ==========================================
             # Get accelerometer data
             # direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz = get_direction_and_acceleration()
@@ -457,64 +545,47 @@ def main():
             #     f"Ax: {(Ax+Ax_offset):.2f}, Ay: {(Ay+Ay_offset):.2f}, Az: {(Az+Az_offset):.2f}")
             # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
             detected_turn = detect_turn()
-            print(f"Detected Turn: {detected_turn}")
+            print(f"===========================Detected Turn: {detected_turn}")
             if not blinker_on and detected_turn != "Straight":
                 voice.speak(f"Don't forget to turn on your turn signal when turning!")
             
             # if direction == "Forward" and accel_magnitude > 1.5:
             #     voice.speak("Slow down!")
             
-            # ==========Optional=================
-            # Seat Belt
+
+            # =====================================
+            # Function 4: Seat Belt (Optional)
             # ==========================================
 
             
+
             # =======================================
             # Trigger Voice Feedback Based on Analysis
             # ========================================
 
-            # -------traffic light---------
-            prev_is_red_traffic_light = is_red_traffic_light
             
-            is_red_traffic_light = False
-            for detected_traffic_light_rgy_conf in detected_traffic_light_rgy_confs:
-                print("Customized Printing - Red Light Conf:" + str(detected_traffic_light_rgy_conf["red"]) + " vs Green Light Conf:" + str(detected_traffic_light_rgy_conf["green"]))
-                if (detected_traffic_light_rgy_conf["red"] >= detected_traffic_light_rgy_conf["green"]):
-                    is_red_traffic_light = True                 
-                
-            if (is_red_traffic_light and not prev_is_red_traffic_light):
-                # speak_async(voice, "red light detected")
-                speak_queued("red light detected")
-            elif (not is_red_traffic_light and prev_is_red_traffic_light):
-                # speak_async(voice, "red light no longer detected")
-                speak_queued("red light no longer detected")
+            # Voice triggered when the following traffic control detected or undetected
+            # 1. traffic light: red trafic light, red left traffic light 
+            # 2. traffic sign: 'stop traffic sign', 'stop ahead traffic sign', 'yield traffic sign', 'yield ahead traffic sign', 'speed limit traffic sign'
+            for key in traffic_control_flag:
+                #if traffic control detected this time, but not last time             
+                if (traffic_control_flag[key] and not last_traffic_control_flag[key]):
+                    if key == "speedLimit":
+                        if driving_mph > best_speed_limit_value:
+                            #speak_async(voice, f"{traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your current speed is {driving_mph}. Please slow down.")    
+                            speak_queued(f"{traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your current speed is {driving_mph}. Please slow down.") 
+                        else:
+                            #speak_async(voice, f"{traffic_control_name[key]} detected.")
+                            speak_queued(f"{traffic_control_name[key]} detected.")
+                    else:
+                        #speak_async(voice, f"{traffic_control_name[key]} detected. Please slow down") 
+                        speak_queued(f"{traffic_control_name[key]} detected. Please slow down")              
+                #if traffic control not detected this time, but detected last time 
+                if (not traffic_control_flag[key] and last_traffic_control_flag[key]):
+                    #speak_async(voice, f"{traffic_control_name[key]} no longer detected.")
+                    speak_queued(f"{traffic_control_name[key]} no longer detected.")
 
-            # -------end of traffic light-----------------
-            
-
-            # -------stop sign---------
-            prev_is_stop_sign = is_stop_sign
-
-            is_stop_sign = False
-            if best_stop_sign_box != None:
-                is_stop_sign = True
-
-            #if (is_stop_sign and not prev_is_stop_sign):
-            #    speak_async(voice, "stop sign detected")
-            #elif (not is_stop_sign and prev_is_stop_sign):
-            #    speak_async(voice, "stop sign no longer detected")
-
-            # -------end of stop sign------------------------------
-
-
-            # -------speed limit sign: Passive reminding---------
-            if best_speed_limit_value != None:
-                #To do: get speed using GPS module
-                driving_speed = 40
-            #   if driving_speed > best_speed_limit_value:
-            #       speak_async(voice, "Speed limit is " + best_speed_limit_value + ". Your current speed is " + driving_speed + ". Please slow down.")    
-                  
-            # -------end of speed limit sign------------------------------
+                last_traffic_control_flag[key] = traffic_control_flag[key]
             
 
             #sets up a named window with full-screen support
@@ -522,7 +593,6 @@ def main():
             #actually makes it full screen
             cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
             cv2.imshow("Annotated Frame", frame)
-            # cv2.imwrite("annotated_frame.jpg", frame)
 
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):

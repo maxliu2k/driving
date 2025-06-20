@@ -5,7 +5,7 @@
 import cv2
 from ultralytics import YOLO
 from utils import *
-#import smbus
+#========#import smbus
 from time import sleep
 import math
 import threading
@@ -441,14 +441,15 @@ def main():
                         # Crop the detected region from the frame
                         cropped = frame[y1:y2, x1:x2]
 
-                        #1. try pytesseract first
+                        #1. Try pytesseract first
                         #gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
                         #gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_LINEAR)
                         #_, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
                         #processed = cv2.medianBlur(thresh, 3)
                         config = '--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
                         all_lowercase_text = pytesseract.image_to_string(cropped, config=config).lower()
-                        print(f"===========================Extracted sign words using pytesseract: {all_lowercase_text}")
+                        print(f"===========================Extracted sign words using pytesseract: {all_lowercase_text}")   
+                        #Use fuzz match to find "speed" and "limit" keyword"
                         words = all_lowercase_text.split()                                              
                         target_words = ['speed', 'limit']
                         found_targets = {target: False for target in target_words}
@@ -457,9 +458,9 @@ def main():
                             for target in target_words:
                                 if not found_targets[target] and fuzz.ratio(word, target) > 0.8:
                                     found_targets[target] = True                   
-
+                        #2. Then try easyocr if pytesseract does not work
                         if not found_targets['speed'] or not found_targets['limit']:   
-                            #2. then try easyocr
+                            
                             reader = easyocr.Reader(['en'])
                             results = reader.readtext(cropped)
                             all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
@@ -517,6 +518,12 @@ def main():
             # print(f"Accel -> Direction: {direction}, Accel: {accel_magnitude:.2f}, "
             #     f"Ax: {(Ax+Ax_offset):.2f}, Ay: {(Ay+Ay_offset):.2f}, Az: {(Az+Az_offset):.2f}")
             # Example: if moving forward with high acceleration (indicating speeding), warn to slow down
+            """
+            detected_turn = detect_turn()
+            print(f"Detected Turn: {detected_turn}")
+            if not blinker_on and detected_turn != "Straight":
+                voice.speak(f"Don't forget to turn on your turn signal when turning!")
+            """
             # if direction == "Forward" and accel_magnitude > 1.5:
             #     voice.speak("Slow down!")
             
