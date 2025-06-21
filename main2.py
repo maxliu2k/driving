@@ -227,7 +227,7 @@ def main():
         if not ret:
             break
 
-        if (count % 5 == 0):          
+        if (count % 30 == 0):          
 
             # Result ID require values:
             # 1. Red/Green light
@@ -572,9 +572,9 @@ def main():
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            if (count % 5 == 0):
-                # Small delay to ease CPU load
-                sleep(0.17)  
+            # if (count % 5 == 0):
+            #     # Small delay to ease CPU load
+            #     sleep(0.17)  
 
     cap.release()
     cv2.destroyAllWindows()
