@@ -3,6 +3,7 @@ videos
 
 videos/
 piper.onnx
+videoTest/TrafficLights/IMG_8754_01.mp4
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
