@@ -442,38 +442,39 @@ def main():
                         cropped = frame[y1:y2, x1:x2]
 
                         # Save the cropped image for debugging
-                        cv2.imwrite(f"cropped_speed_limit_sign_{count}.jpg", cropped)
+                        #cv2.imwrite(f"cropped_speed_limit_sign_{count}.jpg", cropped)
 
                         #1. Try pytesseract first
                         #gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
                         #gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_LINEAR)
                         #_, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
                         #processed = cv2.medianBlur(thresh, 3)
-                        config = '--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-                        all_lowercase_text = pytesseract.image_to_string(cropped, config=config).lower()
-                        print(f"===========================Extracted sign words using pytesseract: {all_lowercase_text}")   
+                        #config = '--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                        #all_lowercase_text = pytesseract.image_to_string(cropped, config=config).lower()
+                        #print(f"===========================Extracted sign words using pytesseract: {all_lowercase_text}")   
                         #Use fuzz match to find "speed" and "limit" keyword"
-                        words = all_lowercase_text.split()                                              
-                        target_words = ['speed', 'limit']
-                        found_targets = {target: False for target in target_words}
+                        #words = all_lowercase_text.split()                                              
+                        #target_words = ['speed', 'limit']
+                        #found_targets = {target: False for target in target_words}
                         # Check each word in OCR result against each target word
-                        for word in words:
-                            for target in target_words:
-                                if not found_targets[target] and fuzz.ratio(word, target) > 0.8:
-                                    found_targets[target] = True                   
+                        #for word in words:
+                        #    for target in target_words:
+                        #        if not found_targets[target] and fuzz.ratio(word, target) > 0.8:
+                        #            found_targets[target] = True                   
                         #2. Then try easyocr if pytesseract does not work
-                        if not found_targets['speed'] or not found_targets['limit']:   
+                        #if not found_targets['speed'] or not found_targets['limit']:   
                             
-                            reader = easyocr.Reader(['en'])
-                            results = reader.readtext(cropped)
-                            all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
-                            print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
-                            if 'speed' in all_lowercase_text:
-                                found_targets['speed'] = True
-                            if 'limit' in all_lowercase_text:
-                                found_targets['limit'] = True
+                        reader = easyocr.Reader(['en'])
+                        results = reader.readtext(cropped)
+                        all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
+                        print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
+                        #if 'speed' in all_lowercase_text:
+                        #   found_targets['speed'] = True
+                        #if 'limit' in all_lowercase_text:
+                        #    found_targets['limit'] = True
 
-                        if found_targets['speed'] and found_targets['limit']:                                                                              
+                        #if found_targets['speed'] and found_targets['limit']:     
+                        if 'speed' in all_lowercase_text and 'limit' in all_lowercase_text:                                                                          
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
                             cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)

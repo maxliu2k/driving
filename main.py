@@ -14,7 +14,7 @@ from voice import Voice
 import cv2
 from ultralytics import YOLO
 from utils import *
-import smbus
+#import smbus
 from time import sleep
 import math
 import threading
@@ -421,7 +421,7 @@ def main():
             s_results = s_model(frame)             
             s_class_names = s_model.names
             #frame = s_results[0].plot(img=frame, line_width=2) 
-
+            
             # Loop each box to find "stop", "stopAhead", "yield", "yieldAhead" signs and speed limit signs
             best_speed_limit_value = 0
             best_speed_limit_conf = 0
