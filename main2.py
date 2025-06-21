@@ -203,8 +203,8 @@ def main():
     # Start video stream
     #cap = cv2.VideoCapture(0)
     # alternatively, use a video file 
-    cap = cv2.VideoCapture('videoTest/TrafficLights/IMG_8754.mp4')
-    #cap = cv2.VideoCapture('videoTest/TrafficSigns/IMG_8754.mp4')
+    #cap = cv2.VideoCapture('videoTest/TrafficLights/IMG_8754.mp4')
+    cap = cv2.VideoCapture('videoTest/TrafficSigns/IMG_8754_01.mp4')
     #========#voice.speak("Recording started!")
 
     # Initialize traffic_control_flag and last_traffic_control_flag, which will be used to trigger voice. 
@@ -440,6 +440,9 @@ def main():
                         
                         # Crop the detected region from the frame
                         cropped = frame[y1:y2, x1:x2]
+
+                        # Save the cropped image for debugging
+                        cv2.imwrite(f"cropped_speed_limit_sign_{count}.jpg", cropped)
 
                         #1. Try pytesseract first
                         #gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
