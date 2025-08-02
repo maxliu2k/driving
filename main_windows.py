@@ -227,7 +227,7 @@ def main():
         if not ret:
             break
 
-        if (count % 30 == 0):          
+        if (count % 15 == 0):          
 
             # Result ID require values:
             # 1. Red/Green light
