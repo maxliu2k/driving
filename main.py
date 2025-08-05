@@ -220,8 +220,8 @@ def main():
     # Start video stream
     #cap = cv2.VideoCapture(0)
     # alternatively, use a video file 
-    cap = cv2.VideoCapture('videoTest/TrafficLights/IMG_8754_01.mp4')
-    #cap = cv2.VideoCapture('videoTest/TrafficSigns/IMG_8754_01.mp4')
+    #cap = cv2.VideoCapture('videoTest/TrafficLights/IMG_8754_01.mp4')
+    cap = cv2.VideoCapture('videoTest/TrafficSigns/IMG_8754_01.mp4')
     voice.speak("Recording started!")
 
 
@@ -433,9 +433,9 @@ def main():
                     box_id = int(s_box.cls[0].item())               
                     box_name = s_class_names[box_id]
 
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
-                    cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)
+                    #cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                    #cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
+                    #    cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)
                     
                     # "stop", "stopAhead", "yield", "yieldAhead" signs
                     if box_name in ["stop", "stopAhead", "yield", "yieldAhead"]:
@@ -461,46 +461,41 @@ def main():
                         # Crop the detected region from the frame
                         cropped = frame[y1:y2, x1:x2]
 
-                        #1. Try pytesseract first
+                        # Save the cropped image for debugging
+                        #cv2.imwrite(f"cropped_speed_limit_sign_{count}.jpg", cropped)
+
+                        target_words = ['speed', 'limit']
+                        found_targets = {target: False for target in target_words}
+
+                        ##pytesseract
                         #gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
                         #gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_LINEAR)
                         #_, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
                         #processed = cv2.medianBlur(thresh, 3)
-                        config = '--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-                        all_lowercase_text = pytesseract.image_to_string(cropped, config=config).lower()
-                        print(f"===========================Extracted sign words using pytesseract: {all_lowercase_text}")
-                        
+                        #config = '--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                        #all_lowercase_text = pytesseract.image_to_string(cropped, config=config).lower()
+                        #print(f"===========================Extracted sign words using pytesseract: {all_lowercase_text}")   
+                        ##Use fuzz match to find "speed" and "limit" keyword"
+                        #words = all_lowercase_text.split()                                                                  
+                        ##Check each word in OCR result against each target word
+                        #for word in words:
+                        #    for target in target_words:
+                        #        if not found_targets[target] and fuzz.ratio(word, target) > 0.8:
+                        #            found_targets[target] = True                   
 
-                        """
-                        #Use fuzz match to find "speed" and "limit" keyword"
-                        words = all_lowercase_text.split()                                              
-                        target_words = ['speed', 'limit']
-                        found_targets = {target: False for target in target_words}
-                        # Check each word in OCR result against each target word
-                        for word in words:
+                        #easyocr 
+                        reader = easyocr.Reader(['en'])
+                        results = reader.readtext(cropped)
+                        all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
+                        print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
+                        for _, text, _ in results:
                             for target in target_words:
-                                if not found_targets[target] and fuzz.ratio(word, target) > 0.8:
-                                    found_targets[target] = True                
+                                if not found_targets[target] and fuzz.ratio(text.lower(), target) > 0.8:
+                                    found_targets[target] = True 
 
-                        
-                        #2. Then try easyocr if pytesseract does not work
-                        if not found_targets['speed'] or not found_targets['limit']:   
-                            
-                            reader = easyocr.Reader(['en'])
-                            results = reader.readtext(cropped)
-                            all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
-                            print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
-                            if 'speed' in all_lowercase_text:
-                                found_targets['speed'] = True
-                            if 'limit' in all_lowercase_text:
-                                found_targets['limit'] = True
 
-                        
-                        if found_targets['speed'] and found_targets['limit']:   
-
-                        """
-
-                        if 'speed' in all_lowercase_text and 'limit' in all_lowercase_text:
+                        #if both 'speed' and 'limit' are found   
+                        if found_targets['speed'] and found_targets['limit']:                                                                       
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
                             cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
@@ -513,8 +508,9 @@ def main():
                                     best_speed_limit_conf = s_box.conf[0].item()
                                     best_speed_limit_value = speed_limit_value
                                 print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  
-                                                       
-                        
+
+
+            """           
             gps.update()
             current = time.monotonic()
             if current - last_print >= 1.0:
@@ -534,7 +530,7 @@ def main():
                         #    voice.speak("Slow down!")
                     else:
                         print('===========================Driving speed is not available')
-            
+            """
 
             # =====================================
             # Function 3: Turning Signal Detection via accelerometer sensor and microphone

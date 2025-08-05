@@ -203,8 +203,8 @@ def main():
     # Start video stream
     #cap = cv2.VideoCapture(0)
     # alternatively, use a video file 
-    cap = cv2.VideoCapture('videoTest/TrafficLights/IMG_8754_01.mp4')
-    #cap = cv2.VideoCapture('videoTest/TrafficSigns/IMG_8754_01.mp4')
+    #cap = cv2.VideoCapture('videoTest/TrafficLights/IMG_8754_01.mp4')
+    cap = cv2.VideoCapture('videoTest/TrafficSigns/IMG_8754_01.mp4')
     #========#voice.speak("Recording started!")
 
     # Initialize traffic_control_flag and last_traffic_control_flag, which will be used to trigger voice. 
@@ -227,7 +227,7 @@ def main():
         if not ret:
             break
 
-        if (count % 15 == 0):          
+        if (count % 30 == 0):          
 
             # Result ID require values:
             # 1. Red/Green light
@@ -341,6 +341,7 @@ def main():
                     # Determine the dominant color of the "forward light bulb", since only one of red, yellow, or green can be active at a time. 
                     # Then, add all forward bulbs of the dominant color to plot_boxes. 
                     # If the dominant color is red, set traffic_control_flag['RedTrafficLight'] to True.
+             
                     for key, value in best_rgy_conf.items():
                         if all(value >= other_val + diff_conf for other_k, other_val in best_rgy_conf.items() if other_k != key): 
                             if key=="red" and result_id == "":
@@ -413,9 +414,9 @@ def main():
                     box_id = int(s_box.cls[0].item())               
                     box_name = s_class_names[box_id]
 
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
-                    cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)
+                    #cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                    #cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
+                    #    cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)
                     
                     # "stop", "stopAhead", "yield", "yieldAhead" signs
                     if box_name in ["stop", "stopAhead", "yield", "yieldAhead"]:
@@ -444,7 +445,10 @@ def main():
                         # Save the cropped image for debugging
                         #cv2.imwrite(f"cropped_speed_limit_sign_{count}.jpg", cropped)
 
-                        #1. Try pytesseract first
+                        target_words = ['speed', 'limit']
+                        found_targets = {target: False for target in target_words}
+
+                        ##pytesseract
                         #gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
                         #gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_LINEAR)
                         #_, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
@@ -452,29 +456,27 @@ def main():
                         #config = '--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
                         #all_lowercase_text = pytesseract.image_to_string(cropped, config=config).lower()
                         #print(f"===========================Extracted sign words using pytesseract: {all_lowercase_text}")   
-                        #Use fuzz match to find "speed" and "limit" keyword"
-                        #words = all_lowercase_text.split()                                              
-                        #target_words = ['speed', 'limit']
-                        #found_targets = {target: False for target in target_words}
-                        # Check each word in OCR result against each target word
+                        ##Use fuzz match to find "speed" and "limit" keyword"
+                        #words = all_lowercase_text.split()                                                                  
+                        ##Check each word in OCR result against each target word
                         #for word in words:
                         #    for target in target_words:
                         #        if not found_targets[target] and fuzz.ratio(word, target) > 0.8:
                         #            found_targets[target] = True                   
-                        #2. Then try easyocr if pytesseract does not work
-                        #if not found_targets['speed'] or not found_targets['limit']:   
-                            
+
+                        #easyocr 
                         reader = easyocr.Reader(['en'])
                         results = reader.readtext(cropped)
                         all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
                         print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
-                        #if 'speed' in all_lowercase_text:
-                        #   found_targets['speed'] = True
-                        #if 'limit' in all_lowercase_text:
-                        #    found_targets['limit'] = True
+                        for _, text, _ in results:
+                            for target in target_words:
+                                if not found_targets[target] and fuzz.ratio(text.lower(), target) > 0.8:
+                                    found_targets[target] = True 
 
-                        #if found_targets['speed'] and found_targets['limit']:     
-                        if 'speed' in all_lowercase_text and 'limit' in all_lowercase_text:                                                                          
+
+                        #if both 'speed' and 'limit' are found   
+                        if found_targets['speed'] and found_targets['limit']:                                                                       
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
                             cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
