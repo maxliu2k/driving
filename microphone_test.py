@@ -1,5 +1,6 @@
 import threading
 import audioop
+import numpy as np
 import pyaudio
 import time
 from pydub import AudioSegment
@@ -32,6 +33,9 @@ def detect_turn_signal_click(threshold=500, chunk=1024, rate=44100, device_index
     """
     global blinker_on
     # current_blinker_state = False
+
+    ZCR_MIN = 0.07 # ~ 7% zero-crossing rate (0.05-0.12ish)
+    FLUX_FACTOR = 2.5 # higher -> stricter detection (range 2.0-3.5ish)
 
     if file_path:
         seg = AudioSegment.from_file(file_path, format="mp3")
@@ -71,6 +75,16 @@ def detect_turn_signal_click(threshold=500, chunk=1024, rate=44100, device_index
         def read_chunk():
             return stream.read(chunk, exception_on_overflow=False)
     
+    def bytes_to_float32_mono(b, width):
+        if width != 2:
+            raise ValueError("Unsupported sample width")
+        x = np.frombuffer(b, dtype=np.int16).astype(np.float32)
+        if x.size == 0:
+            return x
+        return x / 32768.0
+    
+    
+
     in_spike = False
     spike_chunks = 0
     MAX_SPIKE_CHUNKS = 2
@@ -81,6 +95,14 @@ def detect_turn_signal_click(threshold=500, chunk=1024, rate=44100, device_index
     rms_count = 0
     rms_average = 0
 
+    prev_mag = None
+    # initial value for the ezponential moving average of Spectral Flux
+    ema_flux = 1e-6
+    # smoothing factor for the exponential moving average
+    ema_alpha = 0.05
+
+    turn_signal_detected_timestamps = []
+
     while not stop_event.is_set():
         # data = stream.read(chunk, exception_on_overflow=False)
         data = read_chunk()
@@ -90,19 +112,51 @@ def detect_turn_signal_click(threshold=500, chunk=1024, rate=44100, device_index
         # Compute RMS; audioop.rms returns RMS of signed 16-bit samples :contentReference[oaicite:4]{index=4}
         rms = audioop.rms(data, rms_width)
         rms_count += 1
-        rms_average = (rms_average * (rms_count - 1) + rms) / rms_count
+        rms_average = (rms_average * (rms_count - 1) + rms) / max(rms_count, 1)
 
-        print(f"RMS: {rms} Avg: {rms_average} - potential signal click detected!")
+        # print(f"RMS: {rms} Avg: {rms_average} - potential signal click detected!")
+
+        try:
+            x = bytes_to_float32_mono(data, rms_width)
+        except ValueError as e:
+            x = np.array([], dtype=np.float32)
+
+        zcr = 0.0
+        flux = 0.0
+
+        if x.size > 0:
+            w = np.hanning(len(x))
+            X = np.fft.rfft(x * w)
+            mag = np.abs(X)
+
+            if prev_mag is not None and mag.size == prev_mag.size:
+                diff = mag - prev_mag
+                flux = float(np.sum(diff[diff>0]))
+            prev_mag = mag
+
+            # Compute Zero-Crossing Rate
+            s = np.signbit(x)
+
+            if s.size > 1:
+                zcr = float(np.mean(np.abs(np.diff(s))))
+            
+            ema_flux = (1 - ema_alpha) * ema_flux + ema_alpha * flux
+
+        onset_sf = (flux > ema_flux * FLUX_FACTOR) and (zcr > ZCR_MIN)
 
         # Update flag if RMS exceeds threshold
         # blinker_on = rms > threshold
-        blinker_on = rms > rms_average * 1.2
+
+        onset_rms= rms > max(rms_average * 1.2, threshold)
+
+        blinker_on = onset_rms or onset_sf
 
         now = time.time()
         
 
         if blinker_on:
-            print("🔔 Turn signal click detected!")
+            print(f"Onset RMS: {onset_rms}, Onset SF: {onset_sf}, ZCR: {zcr:.4f}, Flux: {flux:.4f}")
+            # print(f"🔔 Turn signal click detected! RMS: {rms}, Avg: {rms_average}")
             if now - last_click_time < 0.5 or now - last_click_time > 1:
                 click_group.clear()
                 # print(f"❌ Resetting click group due to invalid timing - Time since last click: {now - last_click_time:.2f} seconds")
@@ -128,10 +182,13 @@ def detect_turn_signal_click(threshold=500, chunk=1024, rate=44100, device_index
             last_click_time = now
 
             if len(click_group) == 3:
-                print("✅ Turn signal click confirmed!")
+                print(f"✅ Turn signal click confirmed!")
                 print("Click group start times:", click_group)
                 print(f"Time elapsed since first click: {click_group[-1] - click_group[0]:.2f} seconds")
                 print(f"RMS: {rms} (Threshold: {threshold}) - Turn signal click confirmed!")
+
+                turn_signal_detected_timestamps.append(time.strftime("%H:%M:%S", time.localtime(now)))
+                print(f"Turn signal click detected at: {turn_signal_detected_timestamps[-1]}")
                 # Reset the click group after confirming a click
                 click_group.clear()
                 # last_click_time = now
