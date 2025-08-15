@@ -1,0 +1,13 @@
+{
+  "labels": [
+    "noise",
+    "turn"
+  ],
+  "sample_rate": 16000,
+  "n_mels": 64,
+  "n_fft": 1024,
+  "hop_length": 256,
+  "f_min": 20.0,
+  "f_max": 8000,
+  "expects": "log_mel_spectrogram (float32) shaped [B,1,n_mels,time]; per-input normalized inside model"
+}
