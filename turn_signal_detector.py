@@ -173,7 +173,7 @@ class TurnSignalDetector:
             self.ring = torch.roll(self.ring, -self.S)
             self.ring[-self.S:] = x[:self.S]
 
-            p = self.probs_from_waveform(self.model, self.dev, self.ring.unsqueeze(0), self.melspec, self.amp2db)[self.pos_idx]
+            p = self.probs_from_waveform(self.ring.unsqueeze(0))[self.pos_idx]
             print(f"p({self.pos_name})={p:.2f}", end="\r")
             now = time.time()
             if p >= threshold and (now - self.last_fire) >= min_gap_s:
