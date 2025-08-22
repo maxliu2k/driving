@@ -16,6 +16,7 @@ from ultralytics import YOLO
 from utils import *
 #import smbus
 from time import sleep
+from turn_signal_detector import TurnSignalDetector
 import math
 import threading
 import pytesseract
@@ -180,6 +181,16 @@ def detect_turn():
 #     return speed_mph
 
 
+
+# ========================================
+# Turn Signal Detector Setup
+# ========================================
+def turn_signal_callback(prob: float, timestamp: float):
+    print(f"Turn Signal Probability: {prob:.4f} at {timestamp:.2f}")
+
+turn_signal_detector = TurnSignalDetector()
+
+
 # ========================================
 # Main function integrating vision and IMU
 # ========================================
@@ -202,6 +213,12 @@ def main():
     fuzzy_threshold = 80  #To be used when compare words retrieved from traffic sign with keyword "speed"/"limit"
     driving_speed=0
 
+    print("Starting turn signal detector...")
+    turn_signal_detector.start_mic(
+        on_detect=turn_signal_callback
+    )
+
+    print("Starting the voice engine...")
     voice = Voice("piper.onnx")
     def voice_worker():
         while True:
@@ -218,6 +235,7 @@ def main():
     s_model = YOLO('bestsigns.pt') 
 
     # Start video stream
+    print("Starting video capture...")
     #cap = cv2.VideoCapture(0)
     # alternatively, use a video file 
     #cap = cv2.VideoCapture('videoTest/TrafficLights/IMG_8754_01.mp4')
