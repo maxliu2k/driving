@@ -274,5 +274,5 @@ py audio_machine_learning/mic_turn_signal.py --file soundTest/turn/car-blinker-3
 
 - Mic Mode:
 python3 mic_turn_signal.py --mic --model turn_signal_cnn.pt --window_s 1.5 --step_s 0.25 --threshold 0.4
-py audio_machine_learning/mic_turn_signal.py --mic --model audio_machine_learning/turn_signal_cnn.pt --window_s 1.5 --step_s 0.25 --threshold 0.4
+py audio_machine_learning/mic_turn_signal.py --mic --model audio_machine_learning/turn_signal_cnn.pt --window_s 1.5 --step_s 0.25 --threshold 0.45
 """

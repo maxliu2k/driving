@@ -285,8 +285,10 @@ def main():
             # go, goLeft, stop, stopLeft, warning, warningLeft
             # =================================
 
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
             # Detect traffic lights
-            l_results = l_model(frame)   
+            l_results = l_model(rgb_frame)   
             l_class_names = l_model.names            
             #frame = l_results[0].plot(img=frame, line_width=2) 
 
