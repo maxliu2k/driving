@@ -30,6 +30,8 @@ import adafruit_gps
 import time
 from collections import deque
 import queue
+import numpy as np
+import torch
 # import pynmea2 #pip install pyserial pynmea2
 
 voice_queue = queue.Queue()
@@ -192,6 +194,27 @@ turn_signal_detector = TurnSignalDetector()
 
 
 # ========================================
+# Helper Functions
+# ========================================
+def yolo_predict(model, frame, conf_threshold):
+    if frame is None:
+        raise ValueError("Input frame is None")
+    if frame.shape[2] == 4:
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+    frame = np.ascontiguousarray(frame)
+
+    with torch.inference_mode():
+        return model.predict(
+            source=frame, 
+            conf=conf_threshold,
+            imgsz=640,
+            device='cpu'
+        )
+
+
+
+
+# ========================================
 # Main function integrating vision and IMU
 # ========================================
 
@@ -288,7 +311,9 @@ def main():
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             # Detect traffic lights
-            l_results = l_model(rgb_frame)   
+            # l_results = l_model(rgb_frame)   
+
+            l_results = yolo_predict(l_model, frame, l_conf_threshold)
             l_class_names = l_model.names            
             #frame = l_results[0].plot(img=frame, line_width=2) 
 
