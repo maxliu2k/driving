@@ -14,7 +14,7 @@ from voice import Voice
 import cv2
 from ultralytics import YOLO
 from utils import *
-#import smbus
+import smbus
 from time import sleep
 from turn_signal_detector import TurnSignalDetector
 import math
