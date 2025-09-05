@@ -21,9 +21,9 @@ import math
 import threading
 import pytesseract
 #pip install rapidfuzz
-#from rapidfuzz import fuzz
+from rapidfuzz import fuzz
 #pip install easyocr
-#import easyocr
+import easyocr
 import re
 import serial
 import adafruit_gps
