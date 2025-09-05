@@ -199,28 +199,21 @@ turn_signal_detector = TurnSignalDetector()
 def yolo_predict(model, frame, conf_threshold):
     if frame is None:
         raise ValueError("Input frame is None")
+    
+    print(f"Input frame shape: {frame.shape}, dtype: {frame.dtype}")
     if frame.shape[2] == 4:
+        print("Converting BGRA to BGR")
         frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     frame = np.ascontiguousarray(frame)
+    print(f"Frame shape after conversion: {frame.shape}, dtype: {frame.dtype}")
 
     with torch.inference_mode():
-        try:
-            results = model(
-                source=frame, 
-                conf=conf_threshold,
-                imgsz=640,
-                device='cpu'
-            )
-        except TypeError:
-            results = model.predict(
-                source=frame, 
-                conf=conf_threshold,
-                imgsz=640,
-                device='cpu'
-            )
-    
-    print(f"TEST: {results}")
-    return results
+        return model.predict(
+            source=frame, 
+            conf=conf_threshold,
+            imgsz=640,
+            device='cpu'
+        )
 
 
 
