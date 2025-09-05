@@ -282,6 +282,8 @@ def main():
                     "YieldAheadTrafficSign": "yield ahead traffic sign", 
                     "SpeedLimitTrafficSign": "speed limit traffic sign"}
     blinker_on = False
+
+    reader = easyocr.Reader(['en'])
     
 
     while cap.isOpened():
@@ -533,7 +535,6 @@ def main():
                         #            found_targets[target] = True                   
 
                         #easyocr 
-                        reader = easyocr.Reader(['en'])
                         results = reader.readtext(cropped)
                         all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
                         print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
