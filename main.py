@@ -212,7 +212,7 @@ def yolo_predict(model, frame, conf_threshold):
                 device='cpu'
             )
         except TypeError:
-            result = model.predict(
+            results = model.predict(
                 source=frame, 
                 conf=conf_threshold,
                 imgsz=640,
