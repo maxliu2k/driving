@@ -204,12 +204,23 @@ def yolo_predict(model, frame, conf_threshold):
     frame = np.ascontiguousarray(frame)
 
     with torch.inference_mode():
-        return model.predict(
-            source=frame, 
-            conf=conf_threshold,
-            imgsz=640,
-            device='cpu'
-        )
+        try:
+            results = model(
+                source=frame, 
+                conf=conf_threshold,
+                imgsz=640,
+                device='cpu'
+            )
+        except TypeError:
+            result = model.predict(
+                source=frame, 
+                conf=conf_threshold,
+                imgsz=640,
+                device='cpu'
+            )
+    
+    print(f"TEST: {results}")
+    return results
 
 
 
