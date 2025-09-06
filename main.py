@@ -284,7 +284,30 @@ def main():
     blinker_on = False
 
     reader = easyocr.Reader(['en'])
-    
+    last_speed_bbox = None
+    last_speed_ocr_frame = -10**9
+    OCR_COOLDOWN = 3
+    STABILITY_THRESHOLD = 0.5
+
+    def is_bbox_stable(bbox1, bbox2):
+        x1_min, y1_min, x1_max, y1_max = bbox1
+        x2_min, y2_min, x2_max, y2_max = bbox2
+
+        inter_x1, inter_y1 = max(x1_min, x2_min), max(y1_min, y2_min)
+        inter_x2, inter_y2 = min(x1_max, x2_max), min(y1_max, y2_max)
+
+        inter_width = max(0, inter_x2 - inter_x1)
+        inter_height = max(0, inter_y2 - inter_y1)
+
+        inter_area = inter_width * inter_height
+
+        if inter_area == 0:
+            return 0.0
+
+        area1 = (x1_max - x1_min) * (y1_max - y1_min)
+        area2 = (x2_max - x2_min) * (y2_max - y2_min)
+
+        return inter_area / (area1 + area2 - inter_area)
 
     while cap.isOpened():
         count += 1
@@ -535,29 +558,39 @@ def main():
                         #            found_targets[target] = True                   
 
                         #easyocr 
-                        results = reader.readtext(cropped)
-                        all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
-                        print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
-                        for _, text, _ in results:
-                            for target in target_words:
-                                if not found_targets[target] and fuzz.ratio(text.lower(), target) > 0.8:
-                                    found_targets[target] = True 
+                        box = (x1, y1, x2, y2)
+                        do_ocr = False
+                        if last_speed_bbox is None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD:
+                            do_ocr = True
+                        elif (count - last_speed_ocr_frame) >= OCR_COOLDOWN:
+                            do_ocr = True
+
+                        if do_ocr:
+                            last_speed_bbox = box
+                            last_speed_ocr_frame = count
+                            results = reader.readtext(cropped)
+                            all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
+                            print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
+                            for _, text, _ in results:
+                                for target in target_words:
+                                    if not found_targets[target] and fuzz.ratio(text.lower(), target) > 0.8:
+                                        found_targets[target] = True 
 
 
-                        #if both 'speed' and 'limit' are found   
-                        if found_targets['speed'] and found_targets['limit']:                                                                       
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
-                            cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
-                            traffic_control_flag["SpeedLimitTrafficSign"]=True
+                            #if both 'speed' and 'limit' are found   
+                            if found_targets['speed'] and found_targets['limit']:                                                                       
+                                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
+                                cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10),
+                                    cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
+                                traffic_control_flag["SpeedLimitTrafficSign"]=True
 
-                            match = re.search(r'\b\d{1,2}\b', all_lowercase_text)
-                            if match:
-                                speed_limit_value = int(match.group())                                
-                                if box_conf >= best_speed_limit_conf:                    
-                                    best_speed_limit_conf = s_box.conf[0].item()
-                                    best_speed_limit_value = speed_limit_value
-                                print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  
+                                match = re.search(r'\b\d{1,2}\b', all_lowercase_text)
+                                if match:
+                                    speed_limit_value = int(match.group())                                
+                                    if box_conf >= best_speed_limit_conf:                    
+                                        best_speed_limit_conf = s_box.conf[0].item()
+                                        best_speed_limit_value = speed_limit_value
+                                    print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  
 
 
             """           
