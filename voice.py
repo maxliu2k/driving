@@ -55,7 +55,7 @@ class Voice:
         subprocess.run(["aplay", "-"], input=buf.read(), check=True)
     
     def speak(self, text: str):
-        """Default speak() calls file‑based playback."""
+        """Default speak() calls file-based playback."""
         self.speak_to_file(text)
 
 if __name__ == "__main__":
@@ -63,5 +63,11 @@ if __name__ == "__main__":
     # v.speak_to_file("Hello from your Raspberry Pi!")
     v.speak_to_file("red light detected")
     v.speak_to_file("red light no longer detected")
+    v.speak_to_file(f"Don't forget to turn on your turn signal when turning!")
+
+    v.speak_to_file("red light detected. Please slow down.")
+
+    v.speak_to_file("speed limit sign detected. Please slow down.")
+    v.speak_to_file("speed limit sign detected.")
     # or
     # v.speak_raw("Streaming from memory!")
