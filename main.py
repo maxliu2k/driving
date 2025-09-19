@@ -188,7 +188,15 @@ def detect_turn():
 # Turn Signal Detector Setup
 # ========================================
 def turn_signal_callback(prob: float, timestamp: float):
+    global blinker_on
+    if prob > 0.4:
+        blinker_on = True
     print(f"Turn Signal Probability: {prob:.4f} at {timestamp:.2f}")
+
+def turn_signal_deactivate_callback(timestamp: float):
+    global blinker_on
+    blinker_on = False
+    print(f"Turn Signal Deactivated at {timestamp:.2f}")
 
 turn_signal_detector = TurnSignalDetector()
 
@@ -242,7 +250,8 @@ def main():
 
     print("Starting turn signal detector...")
     turn_signal_detector.start_mic(
-        on_detect=turn_signal_callback
+        on_detect=turn_signal_callback,
+        on_deactivate=turn_signal_deactivate_callback
     )
 
     print("Starting the voice engine...")
@@ -330,7 +339,7 @@ def main():
             # Each iterate, reset traffic_control_flag and blinker_on for each frame
             for key in traffic_control_flag:
                 traffic_control_flag[key] = False
-            blinker_on = False
+            # blinker_on = False
 
             # =================================
             # Function 1: Traffic Lights Detection via YOLO
@@ -497,7 +506,7 @@ def main():
             #frame = s_results[0].plot(img=frame, line_width=2) 
             
             # Loop each box to find "stop", "stopAhead", "yield", "yieldAhead" signs and speed limit signs
-            best_speed_limit_value = 0
+            best_speed_limit_value = 1000
             best_speed_limit_conf = 0
             for s_box in s_results[0].boxes:
                 if s_box.conf[0] > s_conf_threshold:
@@ -593,7 +602,7 @@ def main():
                                     print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  
 
 
-            """           
+            
             gps.update()
             current = time.monotonic()
             if current - last_print >= 1.0:
@@ -609,11 +618,12 @@ def main():
                         driving_mph = gps.speed_knots * 1.15078
                         print('===========================Driving Speed: {0:.2f} mph'.format(driving_mph))
                         # Check if the speed exceeds the limit
-                        #if driving_mph > best_speed_limit_value:
+                        if driving_mph > best_speed_limit_value:
                         #    voice.speak("Slow down!")
+                           speak_queued("Slow down!")
                     else:
                         print('===========================Driving speed is not available')
-            """
+            
 
             # =====================================
             # Function 3: Turning Signal Detection via accelerometer sensor and microphone
@@ -626,7 +636,8 @@ def main():
             detected_turn = detect_turn()
             print(f"===========================Detected Turn: {detected_turn}")
             if not blinker_on and detected_turn != "Straight":
-                voice.speak(f"Don't forget to turn on your turn signal when turning!")
+                # voice.speak(f"Don't forget to turn on your turn signal when turning!")
+                speak_queued(f"Don't forget to turn on your turn signal when turning!")
             
             # if direction == "Forward" and accel_magnitude > 1.5:
             #     voice.speak("Slow down!")
