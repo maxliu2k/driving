@@ -604,6 +604,7 @@ def main():
 
             
             gps.update()
+            global last_print
             current = time.monotonic()
             if current - last_print >= 1.0:
                 last_print = current
