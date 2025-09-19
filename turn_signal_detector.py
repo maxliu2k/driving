@@ -142,6 +142,7 @@ class TurnSignalDetector:
         threshold=0.45,
         min_gap_s=1.0,
         on_detect=None,
+        on_deactivate=None,
     ):
         import sounddevice as sd
 
@@ -156,6 +157,8 @@ class TurnSignalDetector:
 
         self.ring = torch.zeros(self.W, dtype=torch.float32)
         self.last_fire = 0.0
+
+        self.silence = [] # call on_deactivate after not getting a hit 5 times in a row
 
         print(f"🎙️ Mic @ {self.sr} Hz | class='{self.pos_name}' thr={threshold}")
         print("Ctrl+C to stop.")
@@ -179,8 +182,15 @@ class TurnSignalDetector:
             if p >= threshold and (now - self.last_fire) >= min_gap_s:
                 self.last_fire = now
                 print(f"\n🔔 Detected {self.pos_name} (p={p:.2f}) at {time.strftime('%H:%M:%S')}")
+                self.silence = []
                 if on_detect:
                     on_detect(p, now)
+            else:
+                self.silence.append(p)
+                if len(self.silence) > 5:
+                    self.silence = []
+                    if on_deactivate:
+                        on_deactivate(now)
 
         self.stream = sd.InputStream(
             samplerate=self.sr, 
