@@ -560,7 +560,7 @@ def main():
                         #print(f"===========================Extracted sign words using pytesseract: {all_lowercase_text}")   
                         ##Use fuzz match to find "speed" and "limit" keyword"
                         #words = all_lowercase_text.split()                                                                  
-                        ##Check each word in OCR result against each target word
+                        #Check each word in OCR result against each target word
                         #for word in words:
                         #    for target in target_words:
                         #        if not found_targets[target] and fuzz.ratio(word, target) > 0.8:
@@ -569,7 +569,7 @@ def main():
                         #easyocr 
                         box = (x1, y1, x2, y2)
                         do_ocr = False
-                        if last_speed_bbox is None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD:
+                        if last_speed_bbox is not None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD:
                             do_ocr = True
                         elif (count - last_speed_ocr_frame) >= OCR_COOLDOWN:
                             do_ocr = True
