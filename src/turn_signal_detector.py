@@ -81,6 +81,15 @@ class TurnSignalDetector:
         if pref == "mps" and torch.backends.mps.is_available():
             return "mps"
         return "cpu"
+    
+    def _resolve_model_path(self):
+        here = Path(__file__).resolve().parent
+        model = here / "models" / "sound" / "turn_signal_cnn.pt"
+
+        if not model.exists():
+            print("Model file not found:", model)
+        else:
+            return str(model)
 
     def load_model(self, ckpt_path: str, device: Optional[str] = None):
         ckpt = torch.load(ckpt_path, map_location="cpu")
@@ -134,7 +143,7 @@ class TurnSignalDetector:
     # MIC MODE
     # -----------------------------
     def start_mic(self, 
-        model="../models/sound/turn_signal_cnn.pt",
+        model=None,
         device=None,
         positive_class=None,
         window_s=1.5,
@@ -146,6 +155,7 @@ class TurnSignalDetector:
     ):
         import sounddevice as sd
 
+        model = self._resolve_model_path()
         self.load_model(model, device)
         self.label_to_idx = {n: i for i, n in enumerate(self.labels)}
         self.pos_name = positive_class or ("turn" if "turn" in self.label_to_idx else self.labels[0])
