@@ -84,12 +84,22 @@ class TurnSignalDetector:
     
     def _resolve_model_path(self):
         here = Path(__file__).resolve().parent
-        model = here / "models" / "sound" / "turn_signal_cnn.pt"
+        candidates = [
+            here.parent / "models" / "sound" / "turn_signal_cnn.pt",
+            here / "models" / "sound" / "turn_signal_cnn.pt",
+            Path.cwd() / "models" / "sound" / "turn_signal_cnn.pt",
+        ]
 
-        if not model.exists():
-            print("Model file not found:", model)
-        else:
-            return str(model)
+        for c in candidates:
+            try:
+                cp = c.expanduser().resolve()
+            except Exception:
+                continue
+            if cp.is_file():
+                return str(cp)
+        
+        print("Could not find a model")
+        return ""
 
     def load_model(self, ckpt_path: str, device: Optional[str] = None):
         ckpt = torch.load(ckpt_path, map_location="cpu")
