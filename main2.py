@@ -155,18 +155,18 @@ from datetime import datetime
 # ========================================
 # Voice Engine Setup
 # ========================================
-voice_queue = queue.Queue()
+# voice_queue = queue.Queue()
 
-def speak_queued(text):
-    voice_queue.put(text)
+# def speak_queued(text):
+#     voice_queue.put(text)
 
-voice = Voice("piper.onnx")
+# voice = Voice("piper.onnx")
 
-def voice_worker():
-    while True:
-        text = voice_queue.get() # Block until an item is available
-        voice.speak(text)
-        voice_queue.task_done()
+# def voice_worker():
+#     while True:
+#         text = voice_queue.get() # Block until an item is available
+#         voice.speak(text)
+#         voice_queue.task_done()
 
 # ========================================
 # Main function integrating vision and IMU
