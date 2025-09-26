@@ -161,7 +161,7 @@ voice_queue = queue.Queue()
 def speak_queued(text):
     voice_queue.put(text)
 
-voice = Voice("piper.onnx")
+voice = Voice("models/voice/piper.onnx")
 
 def voice_worker():
     while True:
@@ -197,16 +197,16 @@ def main():
     count = 0
 
     # Load YOLO model
-    l_model = YOLO('bestlights.pt')
-    b_model = YOLO('bestbulbs.pt')
-    s_model = YOLO('bestsigns.pt') 
+    l_model = YOLO('models/image/best_light.pt')
+    b_model = YOLO('models/image/best_bulb.pt')
+    s_model = YOLO('models/image/best_sign.pt') 
 
     # Start video stream
     print("===========================Starting video capture...")
     #cap = cv2.VideoCapture(0)
-    cap = cv2.VideoCapture('videoTest/TrafficLights/IMG_8754_01.mp4')
-    #cap = cv2.VideoCapture('videoTest/TrafficSigns/IMG_8754_01.mp4')
-    #cap = cv2.VideoCapture('videoTest/Demo1_1080.mp4')
+    #cap = cv2.VideoCapture('tests/video/traffic_lights/IMG_8754_01.mp4')
+    cap = cv2.VideoCapture('tests/video/traffic_signs/IMG_8754_01.mp4')
+    #cap = cv2.VideoCapture('tests/video/Demo1_1080.mp4')
 
     # Initialize traffic_control_flag which will be used to trigger voice.  
     # The traffic_control_name will be used when key:name mapping needed.
@@ -293,6 +293,8 @@ def main():
                         cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
                     
                     # crop traffic light image box
+                    #new_x, new_y, new_w, new_h = int(x - w/2), int(y - h/2), int(w), int(h)
+                    #cropped_traffic_light_frame = frame[new_y:new_y+new_h, new_x:new_x+new_w]
                     cropped_traffic_light_frame = crop_image(frame, (x - w/2, y - h/2, w, h))
                     
                     # Calculate the crop to original offsets

@@ -136,9 +136,10 @@ from datetime import datetime
 # gps.send_command(b'PMTK220,1000')
 # last_print = time.monotonic()
 
-# ========================================
-# Turn Signal Detector Setup
-# ========================================
+
+# # ========================================
+# # Turn Signal Detector Setup
+# # ========================================
 # def turn_signal_callback(prob: float, timestamp: float):
 #     global blinker_on
 #     if prob > 0.4:
@@ -152,21 +153,23 @@ from datetime import datetime
 
 # turn_signal_detector = TurnSignalDetector()
 
-# ========================================
-# Voice Engine Setup
-# ========================================
+# # ========================================
+# # Voice Engine Setup
+# # ========================================
 # voice_queue = queue.Queue()
 
 # def speak_queued(text):
 #     voice_queue.put(text)
 
-# voice = Voice("piper.onnx")
+# voice = Voice("models/voice/piper.onnx")
 
 # def voice_worker():
 #     while True:
 #         text = voice_queue.get() # Block until an item is available
 #         voice.speak(text)
 #         voice_queue.task_done()
+
+
 
 # ========================================
 # Main function integrating vision and IMU
@@ -180,9 +183,9 @@ def main():
     #     on_deactivate=turn_signal_deactivate_callback
     # )
 
-    print("===========================Starting voice engine...")
-    
+    print("===========================Starting voice engine...")  
     # threading.Thread(target=voice_worker, daemon=True).start()
+
     
     l_conf_threshold=0.5 #Traffic light confidence threshold value
     b_conf_threshold=0.5 #Traffic light bulb confidence threshold value
@@ -195,16 +198,16 @@ def main():
     count = 0
 
     # Load YOLO model
-    l_model = YOLO('bestlights.pt')
-    b_model = YOLO('bestbulbs.pt')
-    s_model = YOLO('bestsigns.pt') 
+    l_model = YOLO('models/image/best_light.pt')
+    b_model = YOLO('models/image/best_bulb.pt')
+    s_model = YOLO('models/image/best_sign.pt') 
 
     # Start video stream
     print("===========================Starting video capture...")
     #cap = cv2.VideoCapture(0)
-    #cap = cv2.VideoCapture('videoTest/TrafficLights/IMG_8754_01.mp4')
-    cap = cv2.VideoCapture('videoTest/TrafficSigns/IMG_8754_01.mp4')
-    #cap = cv2.VideoCapture('videoTest/Demo1_1080.mp4')
+    #cap = cv2.VideoCapture('tests/video/traffic_lights/IMG_8754_01.mp4')
+    cap = cv2.VideoCapture('tests/video/traffic_signs/IMG_8754_01.mp4')
+    #cap = cv2.VideoCapture('tests/video/Demo1_1080.mp4')
 
     # Initialize traffic_control_flag which will be used to trigger voice. 
     # The traffic_control_name will be used when key:name mapping needed.
@@ -225,8 +228,8 @@ def main():
     blinker_on = False
 
     reader = easyocr.Reader(['en'])
-    
-   
+
+    #region
     # last_speed_bbox = None
     # last_speed_ocr_frame = -10**9
     # OCR_COOLDOWN = 3
@@ -251,6 +254,7 @@ def main():
     #     area2 = (x2_max - x2_min) * (y2_max - y2_min)
 
     #     return inter_area / (area1 + area2 - inter_area)
+    #endregion
 
     while cap.isOpened():
         count += 1
@@ -261,8 +265,6 @@ def main():
         
         if (count % 10== 0):        
             # Each iterate, reset current_traffic_control_flag and blinker_on for each frame
-            #for key in current_traffic_control_flag:
-            #    current_traffic_control_flag[key] = False
             current_traffic_control_flag = traffic_control_flag.copy()
             blinker_on = False
 
@@ -292,8 +294,12 @@ def main():
                     cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10), 
                         cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
                     
+                   
                     # crop traffic light image box
+                    #new_x, new_y, new_w, new_h = int(x - w/2), int(y - h/2), int(w), int(h)
+                    #cropped_traffic_light_frame = frame[new_y:new_y+new_h, new_x:new_x+new_w]
                     cropped_traffic_light_frame = crop_image(frame, (x - w/2, y - h/2, w, h))
+
                     
                     # Calculate the crop to original offsets
                     offset_x = int(x - w/2)
@@ -497,15 +503,17 @@ def main():
                         box = (x1, y1, x2, y2)
                         do_ocr = True
 
+                        #region
                         # do_ocr = False
                         # if last_speed_bbox is not None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD:
                         #      do_ocr = True
                         # elif (count - last_speed_ocr_frame) >= OCR_COOLDOWN:
                         #      do_ocr = True
-                        
+                        #endregion
+
                         if do_ocr:
-                            last_speed_bbox = box
-                            last_speed_ocr_frame = count
+                            #last_speed_bbox = box
+                            #last_speed_ocr_frame = count
                             results = reader.readtext(cropped)
                             all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
                             #print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
