@@ -134,7 +134,7 @@ class TurnSignalDetector:
     # MIC MODE
     # -----------------------------
     def start_mic(self, 
-        model="audio_machine_learning/turn_signal_cnn.pt",
+        model="../models/sound/turn_signal_cnn.pt",
         device=None,
         positive_class=None,
         window_s=1.5,
