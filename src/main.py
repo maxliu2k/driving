@@ -266,7 +266,7 @@ def main():
         if not ret:
             break
         
-        if (count % 10 == 0):        
+        if (count % PROCESS_EVERY_N == 0):        
             # Each iterate, reset current_traffic_control_flag and blinker_on for each frame
             current_traffic_control_flag = traffic_control_flag.copy()
             blinker_on = False
@@ -298,8 +298,6 @@ def main():
                         cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
                     
                     # crop traffic light image box
-                    #new_x, new_y, new_w, new_h = int(x - w/2), int(y - h/2), int(w), int(h)
-                    #cropped_traffic_light_frame = frame[new_y:new_y+new_h, new_x:new_x+new_w]
                     cropped_traffic_light_frame = crop_image(frame, (x - w/2, y - h/2, w, h))
                     
                     # Calculate the crop to original offsets
@@ -313,9 +311,9 @@ def main():
                                                 interpolation=cv2.INTER_CUBIC  
                                                 )
                     
-                    b_results = b_model(cropped_traffic_light_frame, imgsz=bulb_infer_imgsz, verbose=False)
+
                     # Identify the bulb in the cropped image
-                    b_results = b_model(cropped_traffic_light_frame, verbose=False)
+                    b_results = b_model(cropped_traffic_light_frame, imgsz=bulb_infer_imgsz, verbose=False)
                     #cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
                     #cv2.imshow("Cropped Frame", cropped_traffic_light_frame)   
 
@@ -457,9 +455,9 @@ def main():
             # Function 2: Traffic Signs Detection via YOLO
             # stop, stopAhead, yield, yieldAhead, speedLimit
             # ======================================
-            s_results = s_model(frame, imgsz=infer_imgsz, verbose=False)             
+
             # Detect traffic signs
-            s_results = s_model(frame, verbose=False)             
+            s_results = s_model(frame, imgsz=infer_imgsz, verbose=False)             
             s_class_names = s_model.names
             #frame = s_results[0].plot(img=frame, line_width=2) 
             
@@ -500,15 +498,15 @@ def main():
                         target_words = ['speed', 'limit']
                         found_targets = {target: False for target in target_words}
 
-                        # # Call EasyOCR 
+                        # Call EasyOCR 
                         box = (x1, y1, x2, y2)
+                        # do_ocr = True
+
                         do_ocr = False
                         if last_speed_bbox is not None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD:
                              do_ocr = (count - last_speed_ocr_frame) >= OCR_COOLDOWN_FRAMES
                         else:
                              do_ocr = (count - last_speed_ocr_frame) >= OCR_COOLDOWN_FRAMES
-                        # elif (count - last_speed_ocr_frame) >= OCR_COOLDOWN:
-                        #     do_ocr = True
                         
                         if do_ocr:
                             last_speed_bbox = box
@@ -635,10 +633,7 @@ def main():
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            # if (count % 10 == 0):
-            # Small delay to ease CPU load
-            # sleep(0.17)  
-
+            
     cap.release()
     cv2.destroyAllWindows()
 
