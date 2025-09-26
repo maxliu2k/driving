@@ -486,7 +486,7 @@ def main():
                 # speak_async(voice, "red light detected")
                 speak_queued("red light detected")
             elif (not is_red_traffic_light and prev_is_red_traffic_light):
-                # speak_async(voice, "red light no longer detected")
+                # peak_async(voice, "red light no longer detected")
                 speak_queued("red light no longer detected")
 
             # -------end of traffic light-----------------

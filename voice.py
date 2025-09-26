@@ -23,7 +23,7 @@
 #             # Play the wav file
 #             # subprocess.run(["aplay", "temp.wav"], check=True)
 #         except Exception as e:
-#             print(f"Error: {e}")
+#             print(f"===========================Voice Engine Error: {e}")
 
 import io
 import sys
@@ -63,10 +63,8 @@ if __name__ == "__main__":
     # v.speak_to_file("Hello from your Raspberry Pi!")
     v.speak_to_file("red light detected")
     v.speak_to_file("red light no longer detected")
-    v.speak_to_file(f"Don't forget to turn on your turn signal when turning!")
-
+    v.speak_to_file("Don't forget to turn on your turn signal when turning!")
     v.speak_to_file("red light detected. Please slow down.")
-
     v.speak_to_file("speed limit sign detected. Please slow down.")
     v.speak_to_file("speed limit sign detected.")
     # or

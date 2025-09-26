@@ -160,8 +160,8 @@ class TurnSignalDetector:
 
         self.silence = [] # call on_deactivate after not getting a hit 5 times in a row
 
-        print(f"🎙️ Mic @ {self.sr} Hz | class='{self.pos_name}' thr={threshold}")
-        print("Ctrl+C to stop.")
+        print(f"===========================🎙️ Mic @ {self.sr} Hz | class='{self.pos_name}' thr={threshold}")
+        print("===========================Ctrl+C to stop.")
 
         def callback(indata, frames, time_info, status):
             # nonlocal ring, last_fire
@@ -177,11 +177,11 @@ class TurnSignalDetector:
             self.ring[-self.S:] = x[:self.S]
 
             p = self.probs_from_waveform(self.ring.unsqueeze(0))[self.pos_idx]
-            print(f"p({self.pos_name})={p:.2f}", end="\r")
+            print(f"===========================p({self.pos_name})={p:.2f}", end="\r")
             now = time.time()
             if p >= threshold and (now - self.last_fire) >= min_gap_s:
                 self.last_fire = now
-                print(f"\n🔔 Detected {self.pos_name} (p={p:.2f}) at {time.strftime('%H:%M:%S')}")
+                print(f"\n===========================🔔 Detected {self.pos_name} (p={p:.2f}) at {time.strftime('%H:%M:%S')}")
                 self.silence = []
                 if on_detect:
                     on_detect(p, now)
