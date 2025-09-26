@@ -1,6 +1,5 @@
 rpi-logic/venv
 videos
-*.onnx
 *.mp4
 
 # Byte-compiled / optimized / DLL files
