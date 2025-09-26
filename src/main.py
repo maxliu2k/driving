@@ -633,11 +633,11 @@ def main():
             cv2.imshow("Annotated Frame", frame)
 
             # Exit on 'q' key press
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
             # if (count % 10 == 0):
             # Small delay to ease CPU load
-            sleep(0.17)  
+            # sleep(0.17)  
 
     cap.release()
     cv2.destroyAllWindows()
