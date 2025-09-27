@@ -634,8 +634,9 @@ def main():
             voice_text_for_not_detection = f"{voice_text_for_not_detection[2:]} no longer detected." if voice_text_for_not_detection else ""
             voice_text = " ".join(filter(None, [voice_text_for_detection, voice_speed_limit_text_for_detection, voice_text_for_not_detection]))
             if voice_text!="":
-                speak_queued(voice_text) 
-                #print(voice_text)
+                #speak_queued(voice_text) 
+                print(voice_text)
+                voice.speak(voice_text)
 
             # Set up a named window with full-screen support
             cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
