@@ -59,7 +59,7 @@ class Voice:
         self.speak_to_file(text)
 
 if __name__ == "__main__":
-    v = Voice("piper.onnx")
+    v = Voice("models/voice/piper.onnx")
     # v.speak_to_file("Hello from your Raspberry Pi!")
     v.speak_to_file("red light detected")
     v.speak_to_file("red light no longer detected")
