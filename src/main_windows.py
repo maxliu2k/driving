@@ -1,4 +1,4 @@
-#from voice import Voice
+from voice import Voice
 import cv2
 from ultralytics import YOLO
 from utils import *
@@ -140,34 +140,34 @@ from datetime import datetime
 # ========================================
 # Turn Signal Detector Setup
 # ========================================
-def turn_signal_callback(prob: float, timestamp: float):
-    global blinker_on
-    if prob > 0.4:
-        blinker_on = True
-    print(f"===========================Turn Signal Probability: {prob:.4f} at {timestamp:.2f}")
+# def turn_signal_callback(prob: float, timestamp: float):
+#     global blinker_on
+#     if prob > 0.4:
+#         blinker_on = True
+#     #print(f"===========================Turn Signal Probability: {prob:.4f} at {timestamp:.2f}")
 
-def turn_signal_deactivate_callback(timestamp: float):
-    global blinker_on
-    blinker_on = False
-    print(f"===========================Turn Signal Deactivated at {timestamp:.2f}")
+# def turn_signal_deactivate_callback(timestamp: float):
+#     global blinker_on
+#     blinker_on = False
+#     #print(f"===========================Turn Signal Deactivated at {timestamp:.2f}")
 
-turn_signal_detector = TurnSignalDetector()
+# turn_signal_detector = TurnSignalDetector()
 
 # # ========================================
 # # Voice Engine Setup
 # # ========================================
-# voice_queue = queue.Queue()
+voice_queue = queue.Queue()
 
-# def speak_queued(text):
-#     voice_queue.put(text)
+def speak_queued(text):
+    voice_queue.put(text)
 
-# voice = Voice("models/voice/piper.onnx")
+voice = Voice("models/voice/piper.onnx")
 
-# def voice_worker():
-#     while True:
-#         text = voice_queue.get() # Block until an item is available
-#         voice.speak(text)
-#         voice_queue.task_done()
+def voice_worker():
+    while True:
+        text = voice_queue.get() # Block until an item is available
+        voice.speak(text)
+        voice_queue.task_done()
 
 
 
@@ -177,16 +177,19 @@ turn_signal_detector = TurnSignalDetector()
 def main():
     start_time = datetime.now()
 
-    infer_imgsz = 416
-    bulb_infer_imgsz = 256
-    PROCESS_EVERY_N = 8
+    #infer_imgsz = 416
+    #bulb_infer_imgsz = 256
+    infer_imgsz = 640
+    bulb_infer_imgsz = 640
+
+    PROCESS_EVERY_N = 10
     OCR_COOLDOWN_FRAMES = 30
 
     print("===========================Starting turn signal detector...")
-    turn_signal_detector.start_mic(
-        on_detect=turn_signal_callback,
-        on_deactivate=turn_signal_deactivate_callback
-    )
+    # turn_signal_detector.start_mic(
+    #     on_detect=turn_signal_callback,
+    #     on_deactivate=turn_signal_deactivate_callback
+    # )
 
     print("===========================Starting voice engine...")  
     # threading.Thread(target=voice_worker, daemon=True).start()
@@ -210,8 +213,8 @@ def main():
     # Start video stream
     print("===========================Starting video capture...")
     #cap = cv2.VideoCapture(0)
-    #cap = cv2.VideoCapture('tests/video/traffic_lights/IMG_8754_01.mp4')
-    cap = cv2.VideoCapture('tests/video/traffic_signs/IMG_8754_01.mp4')
+    cap = cv2.VideoCapture('tests/video/traffic_lights/IMG_8754_01.mp4')
+    #cap = cv2.VideoCapture('tests/video/traffic_signs/IMG_8754_01.mp4')
     #cap = cv2.VideoCapture('tests/video/Demo1_1080.mp4')
 
     # Initialize traffic_control_flag which will be used to trigger voice. 
@@ -279,7 +282,7 @@ def main():
             # =================================
 
             # Detect traffic lights
-            l_results = l_model(frame, imgsz=infer_imgsz, verbose=False)     
+            l_results = l_model(frame, imgsz=infer_imgsz, verbose=False)   
             l_class_names = l_model.names            
             #frame = l_results[0].plot(img=frame, line_width=2) 
 
@@ -463,7 +466,7 @@ def main():
             # ======================================
 
             # Detect traffic signs
-            s_results = s_model(frame, imgsz=infer_imgsz, verbose=False)             
+            s_results = s_model(frame, imgsz=infer_imgsz, verbose=False)          
             s_class_names = s_model.names
             #frame = s_results[0].plot(img=frame, line_width=2) 
             
@@ -506,7 +509,7 @@ def main():
 
                         # Call EasyOCR 
                         box = (x1, y1, x2, y2)
-                        # do_ocr = True
+                        do_ocr = True
 
                         #region
                         do_ocr = False
@@ -535,7 +538,7 @@ def main():
                                     cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
                                 current_traffic_control_flag["SpeedLimitTrafficSign"]=True
 
-                                match = re.search(r'\b\d{1,2}\b', all_lowercase_text)
+                                match = re.search(r'\b\d{2}\b', all_lowercase_text)
                                 if match:
                                     speed_limit_value = int(match.group())                                
                                     if box_conf >= best_speed_limit_conf:                    
@@ -631,8 +634,8 @@ def main():
             voice_text_for_not_detection = f"{voice_text_for_not_detection[2:]} no longer detected." if voice_text_for_not_detection else ""
             voice_text = " ".join(filter(None, [voice_text_for_detection, voice_speed_limit_text_for_detection, voice_text_for_not_detection]))
             if voice_text!="":
-                #speak_queued(voice_text) 
-                print(voice_text)
+                speak_queued(voice_text) 
+                #print(voice_text)
 
             # Set up a named window with full-screen support
             cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
@@ -654,6 +657,7 @@ def main():
     end_time = datetime.now()
     duration = end_time - start_time
     print("Duration:", duration)
+    print("count", count)
 
 if __name__ == "__main__":
     main()
