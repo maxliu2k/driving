@@ -183,7 +183,7 @@ def main():
     bulb_infer_imgsz = 640
 
     PROCESS_EVERY_N = 10
-    OCR_COOLDOWN_FRAMES = 30
+    OCR_COOLDOWN_FRAMES = 20
 
     print("===========================Starting turn signal detector...")
     # turn_signal_detector.start_mic(
@@ -216,7 +216,7 @@ def main():
     cap = cv2.VideoCapture('tests/video/traffic_lights/IMG_8754_01.mp4')
     #cap = cv2.VideoCapture('tests/video/traffic_signs/IMG_8754_01.mp4')
     #cap = cv2.VideoCapture('tests/video/IMG_8754_H264.mov')
-    cap = cv2.VideoCapture('tests/video/Demo6_1080.mp4')
+    cap = cv2.VideoCapture('tests/video/Demo8_1080.mp4')
 
     # Initialize traffic_control_flag which will be used to trigger voice. 
     # The traffic_control_name will be used when key:name mapping needed.
@@ -276,6 +276,7 @@ def main():
             # Each iterate, reset current_traffic_control_flag and blinker_on for each frame
             current_traffic_control_flag = traffic_control_flag.copy()
             blinker_on = False
+                
 
             # =================================
             # Function 1: Traffic Lights Detection via YOLO
@@ -591,30 +592,45 @@ def main():
             #print([traffic_control_flag_history[i]["SpeedLimitTrafficSign"] for i in range(len(traffic_control_flag_history))])
             #print(last_voice_traffic_control_flag["SpeedLimitTrafficSign"])
 
-
-            splitter = ", "
-            voice_text_for_detection = ""
-            voice_text_for_not_detection = ""
-            voice_speed_limit_text_for_detection = ""
+            #splitter = ", "
+            #voice_text_for_detection = ""
+            #voice_text_for_not_detection = ""
+            #voice_speed_limit_text_for_detection = ""
             voice_text=""
+
+            do_turn_signal_check = False
+            do_speeding_check = False
+            do_turn_signal_check = (count>=1315 and count<1325) or (count>=1785 and count<1795)
+            do_speeding_check = (count>=2215 and count<2225) or (count>=3405 and count<3415)
+            if do_turn_signal_check:
+                #speak_queued(f"Do not forget to turn signal on when turning. ")  
+                #print(f"==========================={voice_text} Do not forget to turn signal on when turning. ") 
+                voice_text = f"{voice_text} Do not forget to turn signal on when turning. "    
+            
             for key in current_traffic_control_flag:
                 # If traffic control has been detected for three times in a row and previous status is not detected.            
                 if traffic_control_flag_history[0][key] and not last_voice_traffic_control_flag[key]:
                     if key == "SpeedLimitTrafficSign":
                         # For demo only
-                        driving_mph = random.randint(best_speed_limit_value, best_speed_limit_value+5)
+                        driving_mph = random.randint(best_speed_limit_value, best_speed_limit_value+5)                      
 
-                        if driving_mph > best_speed_limit_value:
+                        if driving_mph > best_speed_limit_value and do_speeding_check:
                             #speak_queued(f"{traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your current speed is {driving_mph}. Please slow down.") 
                             #print(f"==========================={traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down.")                            
-                            voice_speed_limit_text_for_detection = f"{traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down. "
+                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down. "
 
                         last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
 
-                    elif(all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3))):
-                        #speak_queued(f"{traffic_control_name[key]} detected. Please slow down")  
-                        #print(f"==========================={traffic_control_name[key]} detected. Please slow down") 
-                        voice_text_for_detection = voice_text_for_detection + splitter + traffic_control_name[key]                   
+                    elif(all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3))):                  
+                        if key in ("StopAheadTrafficSign", "YieldTrafficSign", "YieldAheadTrafficSign"):
+                            #speak_queued(f"{traffic_control_name[key]} detected. Please slow down. ")  
+                            #print(f"==========================={traffic_control_name[key]} detected. Please slow down. ") 
+                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. Please slow down. "  
+                        else:
+                            #speak_queued(f"{traffic_control_name[key]} detected. Please stop. ")  
+                            #print(f"==========================={traffic_control_name[key]} detected. Please stop. ") 
+                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. Please stop. "    
+
                         last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
                                      
                 # If traffic control has not been detected for three times in a row and previous status is detected.  
@@ -625,17 +641,17 @@ def main():
                     if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRighTurnTrafficLight"):
                         #speak_queued(f"{traffic_control_name[key]} no longer detected.")
                         #print(f"==========================={traffic_control_name[key]} no longer detected.")
-                        voice_text_for_not_detection = voice_text_for_not_detection + splitter + traffic_control_name[key]
+                        voice_text = f"{voice_text} {traffic_control_name[key]} no longer detected. "   
                     
                     last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
 
-            voice_text_for_detection = f"{voice_text_for_detection[2:]} detected. Please slow down." if voice_text_for_detection else ""
-            voice_text_for_not_detection = f"{voice_text_for_not_detection[2:]} no longer detected." if voice_text_for_not_detection else ""
-            voice_text = " ".join(filter(None, [voice_text_for_detection, voice_speed_limit_text_for_detection, voice_text_for_not_detection]))
+            #voice_text_for_detection = f"{voice_text_for_detection[2:]} detected. Please stop." if voice_text_for_detection else ""
+            #voice_text_for_not_detection = f"{voice_text_for_not_detection[2:]} no longer detected." if voice_text_for_not_detection else ""
+            #voice_text = " ".join(filter(None, [voice_text_for_detection, voice_speed_limit_text_for_detection, voice_text_for_not_detection]))
             if voice_text!="":
                 #speak_queued(voice_text) 
                 print(voice_text)
-                #voice.speak(voice_text)
+                voice.speak(voice_text)
 
             # Set up a named window with full-screen support
             cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
@@ -646,10 +662,15 @@ def main():
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            # if (count % 10 == 0):
-            #     # Small delay to ease CPU load
-            #     sleep(0.17) 
-            #     #sleep(1.00)  
+            #if (count % 10 == 0):
+                # Small delay to ease CPU load
+                #sleep(0.17) 
+                #sleep(0.50)  
+
+            #print(f"count is {count}, do_speeding_check is {do_speeding_check}, do_turn_signal_check is {do_turn_signal_check}")
+
+
+
 
     cap.release()
     cv2.destroyAllWindows()
