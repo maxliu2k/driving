@@ -209,8 +209,8 @@ def main():
     # Start video stream
     print("===========================Starting video capture...")
     #cap = cv2.VideoCapture(0)
-    #cap = cv2.VideoCapture('tests/video/traffic_lights/IMG_8754_01.mp4')
-    cap = cv2.VideoCapture('tests/video/traffic_signs/IMG_8754_01.mp4')
+    cap = cv2.VideoCapture('tests/video/traffic_lights/IMG_8754_01.mp4')
+    #cap = cv2.VideoCapture('tests/video/traffic_signs/IMG_8754_01.mp4')
     #cap = cv2.VideoCapture('tests/video/Demo1_1080.mp4')
 
     # Initialize traffic_control_flag which will be used to trigger voice.  
