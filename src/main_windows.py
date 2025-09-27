@@ -177,10 +177,10 @@ def voice_worker():
 def main():
     start_time = datetime.now()
 
-    infer_imgsz = 416
-    bulb_infer_imgsz = 256
-    #infer_imgsz = 640
-    #bulb_infer_imgsz = 640
+    #infer_imgsz = 416
+    #bulb_infer_imgsz = 256
+    infer_imgsz = 640
+    bulb_infer_imgsz = 640
 
     PROCESS_EVERY_N = 10
     OCR_COOLDOWN_FRAMES = 30
@@ -215,7 +215,8 @@ def main():
     #cap = cv2.VideoCapture(0)
     cap = cv2.VideoCapture('tests/video/traffic_lights/IMG_8754_01.mp4')
     #cap = cv2.VideoCapture('tests/video/traffic_signs/IMG_8754_01.mp4')
-    cap = cv2.VideoCapture('tests/video/IMG_8754_H264.mov')
+    #cap = cv2.VideoCapture('tests/video/IMG_8754_H264.mov')
+    cap = cv2.VideoCapture('tests/video/Demo6_1080.mp4')
 
     # Initialize traffic_control_flag which will be used to trigger voice. 
     # The traffic_control_name will be used when key:name mapping needed.
@@ -598,10 +599,7 @@ def main():
             voice_text=""
             for key in current_traffic_control_flag:
                 # If traffic control has been detected for three times in a row and previous status is not detected.            
-                if (traffic_control_flag_history[0][key] 
-                    and all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3))
-                    and not last_voice_traffic_control_flag[key]
-                    ):
+                if traffic_control_flag_history[0][key] and not last_voice_traffic_control_flag[key]:
                     if key == "SpeedLimitTrafficSign":
                         # For demo only
                         driving_mph = random.randint(best_speed_limit_value, best_speed_limit_value+5)
@@ -611,19 +609,20 @@ def main():
                             #print(f"==========================={traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down.")                            
                             voice_speed_limit_text_for_detection = f"{traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down. "
 
-                    else:
+                        last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
+
+                    elif(all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3))):
                         #speak_queued(f"{traffic_control_name[key]} detected. Please slow down")  
                         #print(f"==========================={traffic_control_name[key]} detected. Please slow down") 
-                        voice_text_for_detection = voice_text_for_detection + splitter + traffic_control_name[key]
-                    
-                    last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
+                        voice_text_for_detection = voice_text_for_detection + splitter + traffic_control_name[key]                   
+                        last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
                                      
                 # If traffic control has not been detected for three times in a row and previous status is detected.  
                 if (not traffic_control_flag_history[0][key] 
                     and all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3))
                     and last_voice_traffic_control_flag[key]
                     ):             
-                    if key != "SpeedLimitTrafficSign":
+                    if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRighTurnTrafficLight"):
                         #speak_queued(f"{traffic_control_name[key]} no longer detected.")
                         #print(f"==========================={traffic_control_name[key]} no longer detected.")
                         voice_text_for_not_detection = voice_text_for_not_detection + splitter + traffic_control_name[key]
@@ -641,7 +640,7 @@ def main():
             # Set up a named window with full-screen support
             cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
             # Make it full screen
-            cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+            #cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
             cv2.imshow("Annotated Frame", frame)
 
             # Exit on 'q' key press
