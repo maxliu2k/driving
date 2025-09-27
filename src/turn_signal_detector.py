@@ -5,11 +5,11 @@ from typing import Tuple, List, Optional
 import numpy as np
 import torch
 import torch.nn as nn
-import torchaudio
+import torchaudio #pip install torchaudio==2.4.1
 
 # Optional decoders for files
 try:
-    import soundfile as sf
+    import soundfile as sf #pip install soundfile
     _HAVE_SF = True
 except Exception:
     _HAVE_SF = False
