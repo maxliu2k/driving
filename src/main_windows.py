@@ -216,7 +216,7 @@ def main():
     cap = cv2.VideoCapture('tests/video/traffic_lights/IMG_8754_01.mp4')
     #cap = cv2.VideoCapture('tests/video/traffic_signs/IMG_8754_01.mp4')
     #cap = cv2.VideoCapture('tests/video/IMG_8754_H264.mov')
-    cap = cv2.VideoCapture('tests/video/Demo8_1080.mp4')
+    cap = cv2.VideoCapture('tests/video/Demo_1080.mp4')
 
     # Initialize traffic_control_flag which will be used to trigger voice. 
     # The traffic_control_name will be used when key:name mapping needed.
