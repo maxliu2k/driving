@@ -176,6 +176,11 @@ def main():
 
     start_time = datetime.now()
 
+    infer_imgsz = 416
+    bulb_infer_imgsz = 256
+    PROCESS_EVERY_N = 8
+    OCR_COOLDOWN_FRAMES = 30
+
     print("===========================Starting turn signal detector...")
     turn_signal_detector.start_mic(
         on_detect=turn_signal_callback,
@@ -229,30 +234,30 @@ def main():
     reader = easyocr.Reader(['en'])
     
    
-    # last_speed_bbox = None
-    # last_speed_ocr_frame = -10**9
-    # OCR_COOLDOWN = 3
-    # STABILITY_THRESHOLD = 0.5
+    last_speed_bbox = None
+    last_speed_ocr_frame = -10**9
+    OCR_COOLDOWN = 3
+    STABILITY_THRESHOLD = 0.5
 
-    # def is_bbox_stable(bbox1, bbox2):
-    #     x1_min, y1_min, x1_max, y1_max = bbox1
-    #     x2_min, y2_min, x2_max, y2_max = bbox2
+    def is_bbox_stable(bbox1, bbox2):
+        x1_min, y1_min, x1_max, y1_max = bbox1
+        x2_min, y2_min, x2_max, y2_max = bbox2
 
-    #     inter_x1, inter_y1 = max(x1_min, x2_min), max(y1_min, y2_min)
-    #     inter_x2, inter_y2 = min(x1_max, x2_max), min(y1_max, y2_max)
+        inter_x1, inter_y1 = max(x1_min, x2_min), max(y1_min, y2_min)
+        inter_x2, inter_y2 = min(x1_max, x2_max), min(y1_max, y2_max)
 
-    #     inter_width = max(0, inter_x2 - inter_x1)
-    #     inter_height = max(0, inter_y2 - inter_y1)
+        inter_width = max(0, inter_x2 - inter_x1)
+        inter_height = max(0, inter_y2 - inter_y1)
 
-    #     inter_area = inter_width * inter_height
+        inter_area = inter_width * inter_height
 
-    #     if inter_area == 0:
-    #         return 0.0
+        if inter_area == 0:
+            return 0.0
 
-    #     area1 = (x1_max - x1_min) * (y1_max - y1_min)
-    #     area2 = (x2_max - x2_min) * (y2_max - y2_min)
+        area1 = (x1_max - x1_min) * (y1_max - y1_min)
+        area2 = (x2_max - x2_min) * (y2_max - y2_min)
 
-    #     return inter_area / (area1 + area2 - inter_area)
+        return inter_area / (area1 + area2 - inter_area)
 
     while cap.isOpened():
         count += 1
@@ -261,7 +266,7 @@ def main():
         if not ret:
             break
         
-        if (count % 10 == 0):        
+        if (count % PROCESS_EVERY_N == 0):        
             # Each iterate, reset current_traffic_control_flag and blinker_on for each frame
             current_traffic_control_flag = traffic_control_flag.copy()
             blinker_on = False
@@ -272,7 +277,7 @@ def main():
             # =================================
 
             # Detect traffic lights
-            l_results = l_model(frame, verbose=False)   
+            l_results = l_model(frame, imgsz=infer_imgsz, verbose=False)     
             l_class_names = l_model.names            
             #frame = l_results[0].plot(img=frame, line_width=2) 
 
@@ -293,8 +298,6 @@ def main():
                         cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
                     
                     # crop traffic light image box
-                    #new_x, new_y, new_w, new_h = int(x - w/2), int(y - h/2), int(w), int(h)
-                    #cropped_traffic_light_frame = frame[new_y:new_y+new_h, new_x:new_x+new_w]
                     cropped_traffic_light_frame = crop_image(frame, (x - w/2, y - h/2, w, h))
                     
                     # Calculate the crop to original offsets
@@ -310,7 +313,7 @@ def main():
                     
 
                     # Identify the bulb in the cropped image
-                    b_results = b_model(cropped_traffic_light_frame, verbose=False)
+                    b_results = b_model(cropped_traffic_light_frame, imgsz=bulb_infer_imgsz, verbose=False)
                     #cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
                     #cv2.imshow("Cropped Frame", cropped_traffic_light_frame)   
 
@@ -454,7 +457,7 @@ def main():
             # ======================================
 
             # Detect traffic signs
-            s_results = s_model(frame, verbose=False)             
+            s_results = s_model(frame, imgsz=infer_imgsz, verbose=False)             
             s_class_names = s_model.names
             #frame = s_results[0].plot(img=frame, line_width=2) 
             
@@ -497,13 +500,13 @@ def main():
 
                         # Call EasyOCR 
                         box = (x1, y1, x2, y2)
-                        do_ocr = True
+                        # do_ocr = True
 
-                        # do_ocr = False
-                        # if last_speed_bbox is not None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD:
-                        #     do_ocr = True
-                        # elif (count - last_speed_ocr_frame) >= OCR_COOLDOWN:
-                        #     do_ocr = True
+                        do_ocr = False
+                        if last_speed_bbox is not None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD:
+                             do_ocr = (count - last_speed_ocr_frame) >= OCR_COOLDOWN_FRAMES
+                        else:
+                             do_ocr = (count - last_speed_ocr_frame) >= OCR_COOLDOWN_FRAMES
                         
                         if do_ocr:
                             last_speed_bbox = box
@@ -630,10 +633,7 @@ def main():
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            if (count % 10 == 0):
-                # Small delay to ease CPU load
-                sleep(0.17)  
-
+            
     cap.release()
     cv2.destroyAllWindows()
 
