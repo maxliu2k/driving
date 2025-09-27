@@ -37,7 +37,7 @@ class Voice:
         # On Pi, we'll force CPU inference:
         self.voice = PiperVoice.load(model_path, use_cuda=False)
 
-    def speak_to_file(self, text: str, filename: str = "temp.wav"):
+    def speak_to_file(self, text: str, filename: str = "misc/temp.wav"):
         # 1) Write out a standard 16‑bit mono WAV:
         with wave.open(filename, "wb") as wav_file:
             self.voice.synthesize(text, wav_file)
