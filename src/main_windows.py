@@ -177,10 +177,10 @@ def voice_worker():
 def main():
     start_time = datetime.now()
 
-    #infer_imgsz = 416
-    #bulb_infer_imgsz = 256
-    infer_imgsz = 640
-    bulb_infer_imgsz = 640
+    infer_imgsz = 416
+    bulb_infer_imgsz = 256
+    #infer_imgsz = 640
+    #bulb_infer_imgsz = 640
 
     PROCESS_EVERY_N = 10
     OCR_COOLDOWN_FRAMES = 30
@@ -641,7 +641,7 @@ def main():
             # Set up a named window with full-screen support
             cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
             # Make it full screen
-            # cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+            cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
             cv2.imshow("Annotated Frame", frame)
 
             # Exit on 'q' key press
