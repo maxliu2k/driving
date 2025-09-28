@@ -163,12 +163,13 @@ voice_queue = queue.Queue()
 def speak_queued(text):
     voice_queue.put(text)
 
-voice = Voice("models/voice/piper.onnx")
+#voice = Voice("models/voice/piper.onnx")
 
 def voice_worker():
     while True:
         text = voice_queue.get() # Block until an item is available
-        voice.speak(text)
+        #voice.speak(text)
+        playsound(text) 
         voice_queue.task_done()
 
 
@@ -186,14 +187,15 @@ def main():
     PROCESS_EVERY_N = 10
     OCR_COOLDOWN_FRAMES = 10
 
-    print("===========================Starting turn signal detector...")
+
+    # print("===========================Starting turn signal detector...")
     # turn_signal_detector.start_mic(
     #     on_detect=turn_signal_callback,
     #     on_deactivate=turn_signal_deactivate_callback
     # )
 
     print("===========================Starting voice engine...")  
-    # threading.Thread(target=voice_worker, daemon=True).start()
+    threading.Thread(target=voice_worker, daemon=True).start()
     
     l_conf_threshold=0.5 
     b_conf_threshold=0.5
@@ -580,7 +582,8 @@ def main():
             do_turn_signal_check = False
             do_speeding_check = False
 
-            do_turn_signal_check = (count>=1315 and count<1325) or (count>=1785 and count<1795)
+
+            do_turn_signal_check = (count>=1275 and count<1285) or (count>=1785 and count<1795)
             # do_speeding_check = (count>=2215 and count<2225) or (count>=3405 and count<3415)
             do_speeding_check = (count>=2195 and count<2205) or (count>=3395 and count<3405)
 
@@ -588,7 +591,8 @@ def main():
                 # speak_queued(f"Do not forget to turn signal on when turning. ")  
                 # print(f"==========================={voice_text} Do not forget to turn signal on when turning. ") 
                 # voice_text = f"{voice_text} Do not forget to use your turn signal when turning. "  
-                playsound("mobile_app/max_driving/assets/audios/turn_signal.wav")  
+                #playsound("mobile_app/max_driving/assets/audios/turn_signal.wav")  
+                speak_queued("mobile_app/max_driving/assets/audios/turn_signal.wav") 
             
             for key in current_traffic_control_flag:
                 # If traffic control has been detected for three times in a row and previous status is not detected.            
@@ -601,7 +605,8 @@ def main():
                             # speak_queued(f"{traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your current speed is {driving_mph}. Please slow down.") 
                             # print(f"==========================={traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down.")                            
                             # voice_text = f"{voice_text} {traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down. "
-                            playsound("mobile_app/max_driving/assets/audios/speed_limit.wav")
+                            #playsound("mobile_app/max_driving/assets/audios/speed_limit.wav")
+                            speak_queued("mobile_app/max_driving/assets/audios/speed_limit.wav")
 
                         last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
 
@@ -611,17 +616,23 @@ def main():
                         # voice_text = f"{voice_text} {traffic_control_name[key]} detected. " 
                         match key:
                             case "RedTrafficLight":
-                                playsound("mobile_app/max_driving/assets/audios/red_light.wav")
+                                #playsound("mobile_app/max_driving/assets/audios/red_light.wav")
+                                speak_queued("mobile_app/max_driving/assets/audios/red_light.wav")
                             case "RedLeftTurnTrafficLight" :
-                                playsound("mobile_app/max_driving/assets/audios/red_left_light.wav")
+                                #playsound("mobile_app/max_driving/assets/audios/red_left_light.wav")
+                                speak_queued("mobile_app/max_driving/assets/audios/red_left_light.wav")
                             case "StopTrafficSign":
-                                playsound("mobile_app/max_driving/assets/audios/stop.wav")
+                                #playsound("mobile_app/max_driving/assets/audios/stop.wav")
+                                speak_queued("mobile_app/max_driving/assets/audios/stop.wav")
                             case "StopAheadTrafficSign":
-                                playsound("mobile_app/max_driving/assets/audios/stop_ahead.wav")
+                                #playsound("mobile_app/max_driving/assets/audios/stop_ahead.wav")
+                                speak_queued("mobile_app/max_driving/assets/audios/stop_ahead.wav")
                             case "YieldTrafficSign":
-                                playsound("mobile_app/max_driving/assets/audios/yield.wav")
+                                #playsound("mobile_app/max_driving/assets/audios/yield.wav")
+                                speak_queued("mobile_app/max_driving/assets/audios/yield.wav")
                             case "YieldAheadTrafficSign":
-                                playsound("mobile_app/max_driving/assets/audios/yield_ahead.wav")
+                                #playsound("mobile_app/max_driving/assets/audios/yield_ahead.wav")
+                                speak_queued("mobile_app/max_driving/assets/audios/yield_ahead.wav")
                         
 
                         last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
@@ -637,9 +648,11 @@ def main():
                         # voice_text = f"{voice_text} {traffic_control_name[key]} no longer detected. " 
                     match key:
                         case "RedTrafficLight":
-                            playsound("mobile_app/max_driving/assets/audios/red_light_off.wav")
+                            #playsound("mobile_app/max_driving/assets/audios/red_light_off.wav")
+                            speak_queued("mobile_app/max_driving/assets/audios/red_light_off.wav")
                         case "RedLeftTurnTrafficLight" :
-                            playsound("mobile_app/max_driving/assets/audios/red_left_light_off.wav") 
+                            #playsound("mobile_app/max_driving/assets/audios/red_left_light_off.wav") 
+                            speak_queued("mobile_app/max_driving/assets/audios/red_light_off.wav")
                     
                     last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
 
@@ -659,7 +672,7 @@ def main():
                 break
             if (count % 10 == 0):
                # Small delay to ease CPU load
-               sleep(0.17) 
+               sleep(0.25) 
 
             # print(f"count is {count}, do_speeding_check is {do_speeding_check}, do_turn_signal_check is {do_turn_signal_check}")
 

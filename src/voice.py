@@ -74,6 +74,6 @@ if __name__ == "__main__":
     v.speak_to_file("yield ahead sign detected", "mobile_app/max_driving/assets/audios/yield_ahead.wav")
 
     v.speak_to_file("Do not forget to use your turn signal when turning!", "mobile_app/max_driving/assets/audios/turn_signal.wav")
-    v.speak_to_file("You are above the detected speed limit. Please slow down.", "mobile_app/max_driving/assets/audios/speed_limit.wav")
+    v.speak_to_file("You are above the detected speed limit. ", "mobile_app/max_driving/assets/audios/speed_limit.wav")
     # or
     # v.speak_raw("Streaming from memory!")
