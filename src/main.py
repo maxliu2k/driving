@@ -611,8 +611,8 @@ def main():
                     and last_voice_traffic_control_flag[key]
                     ):             
                     if key != "SpeedLimitTrafficSign":
-                        #speak_queued(f"{traffic_control_name[key]} no longer detected.")
-                        #print(f"==========================={traffic_control_name[key]} no longer detected.")
+                        # speak_queued(f"{traffic_control_name[key]} no longer detected.")
+                        # print(f"==========================={traffic_control_name[key]} no longer detected.")
                         voice_text_for_not_detection = voice_text_for_not_detection + splitter + traffic_control_name[key]
                     
                     last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]

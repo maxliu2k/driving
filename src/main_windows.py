@@ -176,13 +176,13 @@ def voice_worker():
 def main():
     start_time = datetime.now()
 
-    #infer_imgsz = 416
-    #bulb_infer_imgsz = 256
+    # infer_imgsz = 416
+    # bulb_infer_imgsz = 256
     infer_imgsz = 640
     bulb_infer_imgsz = 640
 
     PROCESS_EVERY_N = 10
-    OCR_COOLDOWN_FRAMES = 20
+    OCR_COOLDOWN_FRAMES = 10
 
     print("===========================Starting turn signal detector...")
     # turn_signal_detector.start_mic(
@@ -193,14 +193,14 @@ def main():
     print("===========================Starting voice engine...")  
     # threading.Thread(target=voice_worker, daemon=True).start()
     
-    l_conf_threshold=0.5 #Traffic light confidence threshold value
-    b_conf_threshold=0.5 #Traffic light bulb confidence threshold value
-    s_conf_threshold=0.4 #Traffic sign confidence threshold value
+    l_conf_threshold=0.5 
+    b_conf_threshold=0.5
+    s_conf_threshold=0.4 
 
-    diff_conf = 0.1  #To be used to find dominant color of traffic bulb
-    big_font_scale = 0.6  #To be used when plot 
-    small_font_scale = 0.4  #To be used when plot 
-    thickness = 2 #To be used when plot 
+    diff_conf = 0.1
+    big_font_scale = 0.6  
+    small_font_scale = 0.4
+    thickness = 2
     count = 0
 
     # Load YOLO model
@@ -210,14 +210,9 @@ def main():
 
     # Start video stream
     print("===========================Starting video capture...")
-    #cap = cv2.VideoCapture(0)
-    cap = cv2.VideoCapture('tests/video/traffic_lights/IMG_8754_01.mp4')
-    #cap = cv2.VideoCapture('tests/video/traffic_signs/IMG_8754_01.mp4')
-    #cap = cv2.VideoCapture('tests/video/IMG_8754_H264.mov')
     cap = cv2.VideoCapture('tests/video/Demo_1080.mp4')
 
-    # Initialize traffic_control_flag which will be used to trigger voice. 
-    # The traffic_control_name will be used when key:name mapping needed.
+    # Initialize traffic lights and signs to false
     traffic_control_flag = {"RedTrafficLight": False, "RedLeftTurnTrafficLight": False, "RedRightTurnTrafficLight": False, "StopTrafficSign": False, "StopAheadTrafficSign": False, "YieldTrafficSign": False, "YieldAheadTrafficSign": False, "SpeedLimitTrafficSign": False}
     traffic_control_flag_history = deque(maxlen=3)
     for _ in range(3):
@@ -236,10 +231,8 @@ def main():
 
     reader = easyocr.Reader(['en'])
 
-    #region
     last_speed_bbox = None
     last_speed_ocr_frame = -10**9
-    # OCR_COOLDOWN = 3
     STABILITY_THRESHOLD = 0.5
 
     def is_bbox_stable(bbox1, bbox2):
@@ -261,7 +254,6 @@ def main():
         area2 = (x2_max - x2_min) * (y2_max - y2_min)
 
         return inter_area / (area1 + area2 - inter_area)
-    #endregion
 
     while cap.isOpened():
         count += 1
@@ -271,7 +263,7 @@ def main():
             break
         
         if (count % PROCESS_EVERY_N== 0):        
-            # Each iterate, reset current_traffic_control_flag and blinker_on for each frame
+            # Each iteration, reset current_traffic_control_flag and blinker_on
             current_traffic_control_flag = traffic_control_flag.copy()
             blinker_on = False
                 
@@ -296,20 +288,18 @@ def main():
                     x, y, w, h = map(int, l_box.xywh[0])
                     box_id = int(l_box.cls[0].item())               
                     box_name = l_class_names[box_id]
-                    #print(f"===========================Detected traffic light with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")
+                    # print(f"===========================Detected traffic light with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")
                 
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
                     cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10), 
                         cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
                     
                    
-                    # crop traffic light image box
-                    #new_x, new_y, new_w, new_h = int(x - w/2), int(y - h/2), int(w), int(h)
-                    #cropped_traffic_light_frame = frame[new_y:new_y+new_h, new_x:new_x+new_w]
+                    # Crop traffic light image box
                     cropped_traffic_light_frame = crop_image(frame, (x - w/2, y - h/2, w, h))
 
                     
-                    # Calculate the crop to original offsets
+                    # Calculate the crop to offsets
                     offset_x = int(x - w/2)
                     offset_y = int(y - h/2)
                     
@@ -323,18 +313,18 @@ def main():
 
                     # Identify the bulb in the cropped image
                     b_results = b_model(cropped_traffic_light_frame, imgsz=bulb_infer_imgsz, verbose=False)
-                    #cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
-                    #cv2.imshow("Cropped Frame", cropped_traffic_light_frame)   
+                    # cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
+                    # cv2.imshow("Cropped Frame", cropped_traffic_light_frame)   
 
                     b_class_names = b_model.names   
                     
-                    # Initialize. Handle "forward bulb",  "left turn bulb", and "right turn bulb" separately
+                    # Initialize confidence values, handling "forward bulb",  "left turn bulb", and "right turn bulb" separately
                     best_rgy_conf = {'red': 0, 'green': 0,  'yellow': 0}  
                     best_rgy_left_conf = {'red': 0, 'green': 0,  'yellow': 0}
                     best_rgy_right_conf = {'red': 0, 'green': 0,  'yellow': 0}
-                    detected_rgy_boxes = {'red': [], 'green': [],  'yellow': []}  #"forward bulb"                                           
-                    detected_rgy_left_boxes = {'red': [], 'green': [],  'yellow': []}  #"left turn bulb"   
-                    detected_rgy_right_boxes = {'red': [], 'green': [],  'yellow': []}  #"right turn bulb" 
+                    detected_rgy_boxes = {'red': [], 'green': [],  'yellow': []}  # "forward bulb"                                           
+                    detected_rgy_left_boxes = {'red': [], 'green': [],  'yellow': []}  # "left turn bulb"   
+                    detected_rgy_right_boxes = {'red': [], 'green': [],  'yellow': []}  # "right turn bulb" 
 
                     # Iterate through all detected traffic light bulbs, 
                     # append them to detected_rgy_boxes, detected_rgy_left_boxes and detected_rgy_right_boxes accordingly, 
@@ -390,26 +380,24 @@ def main():
                     #     print(f"===========================Detected {color} right turn bulb with {conf:.2f} confidence")
                     
                 
-                    # Will be used to store all bulb boxes which will be plotted
+                    # Stores all bulb boxes which will be plotted
                     plot_boxes = []
 
-                    # Determine the dominant color of the "forward bulb", since only one of red, yellow, or green can be active at a time. 
-                    # Then, add all forward bulbs of the dominant color to plot_boxes. 
-                    # If the dominant color is red, set current_traffic_control_flag['RedTrafficLight'] to True.
+                    # Determine the dominant color of the "forward bulb", since only one of red, yellow, or green can be active at a time, and set traffic_control_flag to true
                     for key, value in best_rgy_conf.items():
                         if all(value >= other_val + diff_conf for other_k, other_val in best_rgy_conf.items() if other_k != key): 
                             if key=="red":
                                 current_traffic_control_flag["RedTrafficLight"] = True
                             plot_boxes.extend(detected_rgy_boxes[key])     
 
-                    # Apply the same logic to handle the "left turn bulb".
+
                     for key, value in best_rgy_left_conf.items():
                         if all(value >= other_val + diff_conf for other_k, other_val in best_rgy_left_conf.items() if other_k != key):
                             if key=="red":
                                 current_traffic_control_flag["RedLeftTurnTrafficLight"] = True
                             plot_boxes.extend(detected_rgy_left_boxes[key])   
 
-                    # Apply the same logic to handle the "right turn bulb".
+
                     for key, value in best_rgy_right_conf.items():
                         if all(value >= other_val + diff_conf for other_k, other_val in best_rgy_right_conf.items() if other_k != key):
                             if key=="red":
@@ -418,9 +406,9 @@ def main():
 
                     # Plot all boxes in plot_boxes
                     for plot_box in plot_boxes:
-                        #p_box_conf = plot_box.conf[0].item()
+                        # p_box_conf = plot_box.conf[0].item()
                         p_x1, p_y1, p_x2, p_y2 = map(int, plot_box.xyxy[0])
-                        #p_x, p_y, p_w, p_h = map(int, plot_box.xywh[0])
+                        # p_x, p_y, p_w, p_h = map(int, plot_box.xywh[0])
                         p_box_id = int(plot_box.cls[0].item())               
                         p_box_name = b_class_names[p_box_id]  
                         
@@ -468,7 +456,6 @@ def main():
             # Detect traffic signs
             s_results = s_model(frame, imgsz=infer_imgsz, verbose=False)          
             s_class_names = s_model.names
-            #frame = s_results[0].plot(img=frame, line_width=2) 
             
             # Loop each box to find "stop", "stopAhead", "yield", "yieldAhead" signs and speed limit signs
             best_speed_limit_value = 1000
@@ -481,16 +468,16 @@ def main():
                     box_id = int(s_box.cls[0].item())               
                     box_name = s_class_names[box_id]
 
-                    #cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
-                    #cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
-                    #    cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)
+                    # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                    # cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
+                    #     cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)
                     
-                    # Check stop , stop ahead, yield, and yield ahead
+                    # Check stop, stop ahead, yield, and yield ahead
                     if box_name in ["stop", "stopAhead", "yield", "yieldAhead"]:
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
                         cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)   
-                        #print(f"===========================Detected {box_name} with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")                                   
+                        # print(f"===========================Detected {box_name} with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")                                   
                         match box_name:
                             case "stop":
                                 current_traffic_control_flag["StopTrafficSign"]=True
@@ -502,29 +489,25 @@ def main():
                                 current_traffic_control_flag["YieldAheadTrafficSign"]=True                    
                     # Speed Limit Signs
                     else: 
-                        #print(f"===========================Detected {box_name} with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")                                                         
+                        # print(f"===========================Detected {box_name} with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")                                                         
                         cropped = frame[y1:y2, x1:x2]
                         target_words = ['speed', 'limit']
                         found_targets = {target: False for target in target_words}
 
                         # Call EasyOCR 
                         box = (x1, y1, x2, y2)
-                        do_ocr = True
 
-                        #region
                         do_ocr = False
-                        if last_speed_bbox is not None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD:
-                             do_ocr = (count - last_speed_ocr_frame) >= OCR_COOLDOWN_FRAMES
-                        else:
-                             do_ocr = (count - last_speed_ocr_frame) >= OCR_COOLDOWN_FRAMES
-                        #endregion
+                        if (last_speed_bbox is not None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD) or (count - last_speed_ocr_frame) >= OCR_COOLDOWN_FRAMES:
+                            do_ocr = True
 
+                        
                         if do_ocr:
                             last_speed_bbox = box
                             last_speed_ocr_frame = count
                             results = reader.readtext(cropped)
                             all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
-                            #print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
+                            # print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
                             for _, text, _ in results:
                                 for target in target_words:
                                     if not found_targets[target] and fuzz.ratio(text.lower(), target) > 0.8:
@@ -544,7 +527,7 @@ def main():
                                     if box_conf >= best_speed_limit_conf:                    
                                         best_speed_limit_conf = s_box.conf[0].item()
                                         best_speed_limit_value = speed_limit_value
-                                    #print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  
+                                    # print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  
 
 
             
@@ -587,22 +570,22 @@ def main():
             # 1. traffic light: red light, red left turn light, and red right turn light 
             # 2. traffic sign: stop , stop ahead, yield, yield ahead, and speed limit when speeding
             traffic_control_flag_history.appendleft(current_traffic_control_flag)
-            #print([traffic_control_flag_history[i]["SpeedLimitTrafficSign"] for i in range(len(traffic_control_flag_history))])
-            #print(last_voice_traffic_control_flag["SpeedLimitTrafficSign"])
+            # print([traffic_control_flag_history[i]["SpeedLimitTrafficSign"] for i in range(len(traffic_control_flag_history))])
+            # print(last_voice_traffic_control_flag["SpeedLimitTrafficSign"])
 
-            voice_text=""
-
+            voice_text = ""
 
             do_turn_signal_check = False
             do_speeding_check = False
-            do_turn_signal_check = (count>=1315 and count<1325) or (count>=1785 and count<1795)
-            do_speeding_check = (count>=2215 and count<2225) or (count>=3405 and count<3415)
 
+            do_turn_signal_check = (count>=1315 and count<1325) or (count>=1785 and count<1795)
+            # do_speeding_check = (count>=2215 and count<2225) or (count>=3405 and count<3415)
+            do_speeding_check = (count>=2195 and count<2205) or (count>=3395 and count<3405)
 
             if do_turn_signal_check:
-                #speak_queued(f"Do not forget to turn signal on when turning. ")  
-                #print(f"==========================={voice_text} Do not forget to turn signal on when turning. ") 
-                voice_text = f"{voice_text} Do not forget to turn signal on when turning. "    
+                # speak_queued(f"Do not forget to turn signal on when turning. ")  
+                # print(f"==========================={voice_text} Do not forget to turn signal on when turning. ") 
+                voice_text = f"{voice_text} Do not forget to use your turn signal when turning. "    
             
             for key in current_traffic_control_flag:
                 # If traffic control has been detected for three times in a row and previous status is not detected.            
@@ -612,21 +595,21 @@ def main():
                         driving_mph = random.randint(best_speed_limit_value, best_speed_limit_value+5)                      
 
                         if driving_mph > best_speed_limit_value and do_speeding_check:
-                            #speak_queued(f"{traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your current speed is {driving_mph}. Please slow down.") 
-                            #print(f"==========================={traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down.")                            
+                            # speak_queued(f"{traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your current speed is {driving_mph}. Please slow down.") 
+                            # print(f"==========================={traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down.")                            
                             voice_text = f"{voice_text} {traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down. "
 
                         last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
 
-                    elif(all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3))):                  
+                    elif all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3)):                  
                         if key in ("StopAheadTrafficSign", "YieldTrafficSign", "YieldAheadTrafficSign"):
-                            #speak_queued(f"{traffic_control_name[key]} detected. Please slow down. ")  
-                            #print(f"==========================={traffic_control_name[key]} detected. Please slow down. ") 
-                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. Please slow down. "  
+                            # speak_queued(f"{traffic_control_name[key]} detected. Please slow down. ")  
+                            # print(f"==========================={traffic_control_name[key]} detected. Please slow down. ") 
+                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. "  
                         else:
-                            #speak_queued(f"{traffic_control_name[key]} detected. Please stop. ")  
-                            #print(f"==========================={traffic_control_name[key]} detected. Please stop. ") 
-                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. Please stop. "    
+                            # speak_queued(f"{traffic_control_name[key]} detected. Please stop. ")  
+                            # print(f"==========================={traffic_control_name[key]} detected. Please stop. ") 
+                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. "    
 
                         last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
                                      
@@ -636,38 +619,30 @@ def main():
                     and last_voice_traffic_control_flag[key]
                     ):             
                     if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRighTurnTrafficLight"):
-                        #speak_queued(f"{traffic_control_name[key]} no longer detected.")
-                        #print(f"==========================={traffic_control_name[key]} no longer detected.")
+                        # speak_queued(f"{traffic_control_name[key]} no longer detected.")
+                        # print(f"==========================={traffic_control_name[key]} no longer detected.")
                         voice_text = f"{voice_text} {traffic_control_name[key]} no longer detected. "   
                     
                     last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
 
-            #voice_text_for_detection = f"{voice_text_for_detection[2:]} detected. Please stop." if voice_text_for_detection else ""
-            #voice_text_for_not_detection = f"{voice_text_for_not_detection[2:]} no longer detected." if voice_text_for_not_detection else ""
-            #voice_text = " ".join(filter(None, [voice_text_for_detection, voice_speed_limit_text_for_detection, voice_text_for_not_detection]))
             if voice_text!="":
-                #speak_queued(voice_text) 
+                # speak_queued(voice_text) 
                 print(voice_text)
-                voice.speak(voice_text)
+                voice.speak(voice_text) # Comment out when running on Windows
 
             # Set up a named window with full-screen support
             cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
-            # Make it full screen
-            cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+            #cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
             cv2.imshow("Annotated Frame", frame)
 
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            #if (count % 10 == 0):
-                # Small delay to ease CPU load
-                #sleep(0.17) 
-                #sleep(0.50)  
+            # if (count % 10 == 0):
+            #    # Small delay to ease CPU load
+            #    sleep(0.17) 
 
-            #print(f"count is {count}, do_speeding_check is {do_speeding_check}, do_turn_signal_check is {do_turn_signal_check}")
-
-
-
+            # print(f"count is {count}, do_speeding_check is {do_speeding_check}, do_turn_signal_check is {do_turn_signal_check}")
 
     cap.release()
     cv2.destroyAllWindows()

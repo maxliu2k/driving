@@ -1,6 +1,8 @@
 rpi-logic/venv
 *.onnx
 *.mp4
+*.mov
+*.MOV
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
