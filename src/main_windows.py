@@ -170,17 +170,16 @@ def voice_worker():
         voice_queue.task_done()
 
 
-
 # ========================================
 # Main function integrating vision and IMU
 # ========================================
 def main():
     start_time = datetime.now()
 
-    #infer_imgsz = 416
-    #bulb_infer_imgsz = 256
-    infer_imgsz = 640
-    bulb_infer_imgsz = 640
+    infer_imgsz = 416
+    bulb_infer_imgsz = 256
+    #infer_imgsz = 640
+    #bulb_infer_imgsz = 640
 
     PROCESS_EVERY_N = 10
     OCR_COOLDOWN_FRAMES = 20
@@ -193,7 +192,6 @@ def main():
 
     print("===========================Starting voice engine...")  
     # threading.Thread(target=voice_worker, daemon=True).start()
-
     
     l_conf_threshold=0.5 #Traffic light confidence threshold value
     b_conf_threshold=0.5 #Traffic light bulb confidence threshold value
@@ -592,16 +590,15 @@ def main():
             #print([traffic_control_flag_history[i]["SpeedLimitTrafficSign"] for i in range(len(traffic_control_flag_history))])
             #print(last_voice_traffic_control_flag["SpeedLimitTrafficSign"])
 
-            #splitter = ", "
-            #voice_text_for_detection = ""
-            #voice_text_for_not_detection = ""
-            #voice_speed_limit_text_for_detection = ""
             voice_text=""
+
 
             do_turn_signal_check = False
             do_speeding_check = False
             do_turn_signal_check = (count>=1315 and count<1325) or (count>=1785 and count<1795)
             do_speeding_check = (count>=2215 and count<2225) or (count>=3405 and count<3415)
+
+
             if do_turn_signal_check:
                 #speak_queued(f"Do not forget to turn signal on when turning. ")  
                 #print(f"==========================={voice_text} Do not forget to turn signal on when turning. ") 
