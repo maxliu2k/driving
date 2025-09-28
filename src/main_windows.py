@@ -20,6 +20,7 @@ import numpy as np
 #import pynmea2 #pip install pyserial pynmea2
 import random
 from datetime import datetime
+from playsound import playsound
 
 
 # # =============================== 
@@ -152,6 +153,7 @@ from datetime import datetime
 #     #print(f"===========================Turn Signal Deactivated at {timestamp:.2f}")
 
 # turn_signal_detector = TurnSignalDetector()
+
 
 # # ========================================
 # # Voice Engine Setup
@@ -585,7 +587,8 @@ def main():
             if do_turn_signal_check:
                 # speak_queued(f"Do not forget to turn signal on when turning. ")  
                 # print(f"==========================={voice_text} Do not forget to turn signal on when turning. ") 
-                voice_text = f"{voice_text} Do not forget to use your turn signal when turning. "    
+                # voice_text = f"{voice_text} Do not forget to use your turn signal when turning. "  
+                playsound("mobile_app/max_driving/assets/audios/turn_signal.wav")  
             
             for key in current_traffic_control_flag:
                 # If traffic control has been detected for three times in a row and previous status is not detected.            
@@ -597,19 +600,29 @@ def main():
                         if driving_mph > best_speed_limit_value and do_speeding_check:
                             # speak_queued(f"{traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your current speed is {driving_mph}. Please slow down.") 
                             # print(f"==========================={traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down.")                            
-                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down. "
+                            # voice_text = f"{voice_text} {traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down. "
+                            playsound("mobile_app/max_driving/assets/audios/speed_limit.wav")
 
                         last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
 
-                    elif all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3)):                  
-                        if key in ("StopAheadTrafficSign", "YieldTrafficSign", "YieldAheadTrafficSign"):
-                            # speak_queued(f"{traffic_control_name[key]} detected. Please slow down. ")  
-                            # print(f"==========================={traffic_control_name[key]} detected. Please slow down. ") 
-                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. "  
-                        else:
-                            # speak_queued(f"{traffic_control_name[key]} detected. Please stop. ")  
-                            # print(f"==========================={traffic_control_name[key]} detected. Please stop. ") 
-                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. "    
+                    elif all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3)):                                          
+                        # speak_queued(f"{traffic_control_name[key]} detected. Please stop. ")  
+                        # print(f"==========================={traffic_control_name[key]} detected. Please stop. ") 
+                        # voice_text = f"{voice_text} {traffic_control_name[key]} detected. " 
+                        match key:
+                            case "RedTrafficLight":
+                                playsound("mobile_app/max_driving/assets/audios/red_light.wav")
+                            case "RedLeftTurnTrafficLight" :
+                                playsound("mobile_app/max_driving/assets/audios/red_left_light.wav")
+                            case "StopTrafficSign":
+                                playsound("mobile_app/max_driving/assets/audios/stop.wav")
+                            case "StopAheadTrafficSign":
+                                playsound("mobile_app/max_driving/assets/audios/stop_ahead.wav")
+                            case "YieldTrafficSign":
+                                playsound("mobile_app/max_driving/assets/audios/yield.wav")
+                            case "YieldAheadTrafficSign":
+                                playsound("mobile_app/max_driving/assets/audios/yield_ahead.wav")
+                        
 
                         last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
                                      
@@ -618,17 +631,23 @@ def main():
                     and all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3))
                     and last_voice_traffic_control_flag[key]
                     ):             
-                    if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRighTurnTrafficLight"):
+                    #if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRighTurnTrafficLight"):
                         # speak_queued(f"{traffic_control_name[key]} no longer detected.")
                         # print(f"==========================={traffic_control_name[key]} no longer detected.")
-                        voice_text = f"{voice_text} {traffic_control_name[key]} no longer detected. "   
+                        # voice_text = f"{voice_text} {traffic_control_name[key]} no longer detected. " 
+                    match key:
+                        case "RedTrafficLight":
+                            playsound("mobile_app/max_driving/assets/audios/red_light_off.wav")
+                        case "RedLeftTurnTrafficLight" :
+                            playsound("mobile_app/max_driving/assets/audios/red_left_light_off.wav") 
                     
                     last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
 
             if voice_text!="":
                 # speak_queued(voice_text) 
                 print(voice_text)
-                voice.speak(voice_text) # Comment out when running on Windows
+                # voice.speak(voice_text) # Comment out when running on Windows
+                
 
             # Set up a named window with full-screen support
             cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
@@ -638,9 +657,9 @@ def main():
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            # if (count % 10 == 0):
-            #    # Small delay to ease CPU load
-            #    sleep(0.17) 
+            if (count % 10 == 0):
+               # Small delay to ease CPU load
+               sleep(0.17) 
 
             # print(f"count is {count}, do_speeding_check is {do_speeding_check}, do_turn_signal_check is {do_turn_signal_check}")
 
