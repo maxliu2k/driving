@@ -184,14 +184,14 @@ def main():
     PROCESS_EVERY_N = 10
     OCR_COOLDOWN_FRAMES = 10
 
-    print("===========================Starting turn signal detector...")
+    # print("===========================Starting turn signal detector...")
     # turn_signal_detector.start_mic(
     #     on_detect=turn_signal_callback,
     #     on_deactivate=turn_signal_deactivate_callback
     # )
 
     print("===========================Starting voice engine...")  
-    # threading.Thread(target=voice_worker, daemon=True).start()
+    threading.Thread(target=voice_worker, daemon=True).start()
     
     l_conf_threshold=0.5 
     b_conf_threshold=0.5

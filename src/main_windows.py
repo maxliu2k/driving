@@ -652,7 +652,7 @@ def main():
                             speak_queued("mobile_app/max_driving/assets/audios/red_light_off.wav")
                         case "RedLeftTurnTrafficLight" :
                             #playsound("mobile_app/max_driving/assets/audios/red_left_light_off.wav") 
-                            speak_queued("mobile_app/max_driving/assets/audios/red_light_off.wav")
+                            speak_queued("mobile_app/max_driving/assets/audios/red_left_light_off.wav")
                     
                     last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
 
@@ -672,7 +672,7 @@ def main():
                 break
             if (count % 10 == 0):
                # Small delay to ease CPU load
-               sleep(0.25) 
+               sleep(0.20) 
 
             # print(f"count is {count}, do_speeding_check is {do_speeding_check}, do_turn_signal_check is {do_turn_signal_check}")
 
