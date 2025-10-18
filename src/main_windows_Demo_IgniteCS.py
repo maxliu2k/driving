@@ -216,7 +216,7 @@ def main():
 
     # Start video stream
     print("===========================Starting video capture...")
-    cap = cv2.VideoCapture('tests/video/Demo_1080_2.mp4')
+    cap = cv2.VideoCapture('tests/video/Demo_1080.mp4')
 
     # Initialize traffic lights and signs to false
     traffic_control_flag = {"RedTrafficLight": False, "RedLeftTurnTrafficLight": False, "RedRightTurnTrafficLight": False, "StopTrafficSign": False, "StopAheadTrafficSign": False, "YieldTrafficSign": False, "YieldAheadTrafficSign": False, "SpeedLimitTrafficSign": False}
@@ -641,7 +641,7 @@ def main():
               
 
             # Set up a named window with full-screen support
-            # cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
+            cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
             # cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
             cv2.imshow("Annotated Frame", frame)
 
