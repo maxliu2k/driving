@@ -68,7 +68,7 @@ if __name__ == "__main__":
     v.speak_to_file("red left light detected", "mobile_app/max_driving/assets/audios/red_left_light.wav")
     v.speak_to_file("red left light no longer detected", "mobile_app/max_driving/assets/audios/red_left_light_off.wav")
 
-    v.speak_to_file("stop sign detected", "mobile_app/max_driving/assets/audios/stop.wav")
+    v.speak_to_file("stop sign detected. please slow down.", "mobile_app/max_driving/assets/audios/stop_slow.wav")
     v.speak_to_file("stop ahead sign detected", "mobile_app/max_driving/assets/audios/stop_ahead.wav")
     v.speak_to_file("yield sign detected", "mobile_app/max_driving/assets/audios/yield.wav")
     v.speak_to_file("yield ahead sign detected", "mobile_app/max_driving/assets/audios/yield_ahead.wav")
