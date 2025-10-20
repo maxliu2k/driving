@@ -515,7 +515,7 @@ def main():
                             # print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
                             for _, text, _ in results:
                                 for target in target_words:
-                                    if not found_targets[target] and fuzz.ratio(text.lower(), target) > 0.8:
+                                    if not found_targets[target] and fuzz.ratio(text.lower(), target) > 80:
                                         found_targets[target] = True 
 
 
@@ -594,7 +594,7 @@ def main():
                     if key == "SpeedLimitTrafficSign":
 
                         # For Demo only
-                        driving_mph = random.randint(best_speed_limit_value, best_speed_limit_value+5)                      
+                        driving_mph = random.randint(best_speed_limit_value+1, best_speed_limit_value+5)                      
                         # End of for Demo
 
                         if driving_mph > best_speed_limit_value and do_speeding_check:

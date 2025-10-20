@@ -62,7 +62,7 @@ if __name__ == "__main__":
     v = Voice("models/voice/piper.onnx")
     v.speak_to_file("Hello from your Raspberry Pi!", "mobile_app/max_driving/assets/audios/test.wav")
 
-    v.speak_to_file("red light detected", "mobile_app/max_driving/assets/audios/red_light.wav")
+    v.speak_to_file("red light detected. please slow down.", "mobile_app/max_driving/assets/audios/red_light_slow.wav")
     v.speak_to_file("red light no longer detected", "mobile_app/max_driving/assets/audios/red_light_off.wav")
 
     v.speak_to_file("red left light detected", "mobile_app/max_driving/assets/audios/red_left_light.wav")
@@ -74,6 +74,6 @@ if __name__ == "__main__":
     v.speak_to_file("yield ahead sign detected", "mobile_app/max_driving/assets/audios/yield_ahead.wav")
 
     v.speak_to_file("Do not forget to use your turn signal when turning!", "mobile_app/max_driving/assets/audios/turn_signal.wav")
-    v.speak_to_file("You are above the detected speed limit. ", "mobile_app/max_driving/assets/audios/speed_limit.wav")
+    v.speak_to_file("You are above the detected speed limit of 45. Your speed is 48.", "mobile_app/max_driving/assets/audios/speed_limit.wav")
     # or
     # v.speak_raw("Streaming from memory!")
