@@ -1,207 +1,292 @@
-from voice import Voice
 import cv2
 from ultralytics import YOLO
-from utils import *
-#import smbus
-from time import sleep
-from turn_signal_detector import TurnSignalDetector
-import math
 import threading
-from rapidfuzz import fuzz #pip install rapidfuzz
-import easyocr #pip install easyocr
-import re
-#import serial
-#import adafruit_gps
-import time
-from collections import deque
-import queue
-import numpy as np
-#import torch
-#import pynmea2 #pip install pyserial pynmea2
 import random
 from datetime import datetime
+from time import sleep
+import queue
+from collections import deque
+#import pynmea2 #pip install pyserial pynmea2
+
+from utils import *
+from speed_limit_OCR import SpeedLimitOCR
+from turn_signal_detection_manager import TurnSignalDetectionManager
+from voice_playback_manager import VoicePlaybackManager
+from IMU_controller import IMUController
+from GPS_controller import GPSController
+
+def is_bbox_stable(bbox1, bbox2):
+    x1_min, y1_min, x1_max, y1_max = bbox1
+    x2_min, y2_min, x2_max, y2_max = bbox2
+
+    inter_x1, inter_y1 = max(x1_min, x2_min), max(y1_min, y2_min)
+    inter_x2, inter_y2 = min(x1_max, x2_max), min(y1_max, y2_max)
+
+    inter_width = max(0, inter_x2 - inter_x1)
+    inter_height = max(0, inter_y2 - inter_y1)
+
+    inter_area = inter_width * inter_height
+
+    if inter_area == 0:
+        return 0.0
+
+    area1 = (x1_max - x1_min) * (y1_max - y1_min)
+    area2 = (x2_max - x2_min) * (y2_max - y2_min)
+
+    return inter_area / (area1 + area2 - inter_area)
+
+# Process a single detected traffic light box and update confidence values and detected box lists for each color and direction
+def process_rgy_box(
+    b_box, b_box_conf, b_box_name,
+    best_rgy_conf, best_rgy_left_conf, best_rgy_right_conf,
+    detected_rgy_boxes, detected_rgy_left_boxes, detected_rgy_right_boxes
+):
+    match b_box_name:
+        case "stop":
+            if b_box_conf > best_rgy_conf['red']:
+                best_rgy_conf['red'] = b_box_conf
+            detected_rgy_boxes['red'].append((b_box, b_box_name))
+
+        case "stopLeft":
+            if b_box_conf > best_rgy_left_conf['red']:
+                best_rgy_left_conf['red'] = b_box_conf
+            detected_rgy_left_boxes['red'].append((b_box, b_box_name))
+
+        case "stopRight":
+            if b_box_conf > best_rgy_right_conf['red']:
+                best_rgy_right_conf['red'] = b_box_conf
+            detected_rgy_right_boxes['red'].append((b_box, b_box_name))
+
+        case "go":
+            if b_box_conf > best_rgy_conf['green']:
+                best_rgy_conf['green'] = b_box_conf
+            detected_rgy_boxes['green'].append((b_box, b_box_name))
+
+        case "goLeft":
+            if b_box_conf > best_rgy_left_conf['green']:
+                best_rgy_left_conf['green'] = b_box_conf
+            detected_rgy_left_boxes['green'].append((b_box, b_box_name))
+
+        case "goRight":
+            if b_box_conf > best_rgy_right_conf['green']:
+                best_rgy_right_conf['green'] = b_box_conf
+            detected_rgy_right_boxes['green'].append((b_box, b_box_name))
+
+        case "warning":
+            if b_box_conf > best_rgy_conf['yellow']:
+                best_rgy_conf['yellow'] = b_box_conf
+            detected_rgy_boxes['yellow'].append((b_box, b_box_name))
+
+        case "warningLeft":
+            if b_box_conf > best_rgy_left_conf['yellow']:
+                best_rgy_left_conf['yellow'] = b_box_conf
+            detected_rgy_left_boxes['yellow'].append((b_box, b_box_name))
+
+        case "warningRight":
+            if b_box_conf > best_rgy_right_conf['yellow']:
+                best_rgy_right_conf['yellow'] = b_box_conf
+            detected_rgy_right_boxes['yellow'].append((b_box, b_box_name))
 
 
-# # =============================== 
-# # IMU(MPU6050) Setup
-# # ===============================
-# # MPU6050 Registers
-# PWR_MGMT_1   = 0x6B
-# SMPLRT_DIV   = 0x19
-# CONFIG       = 0x1A
-# GYRO_CONFIG  = 0x1B
-# INT_ENABLE   = 0x38
-# ACCEL_XOUT_H = 0x3B
-# ACCEL_YOUT_H = 0x3D
-# ACCEL_ZOUT_H = 0x3F
-# GYRO_XOUT_H  = 0x43
-# GYRO_YOUT_H  = 0x45
-# GYRO_ZOUT_H  = 0x47
+# Determine the dominant color for forward, left, and right directions
+def get_dominant_color_for_direction(
+    best_rgy_conf, best_rgy_left_conf, best_rgy_right_conf,
+    detected_rgy_boxes, detected_rgy_left_boxes, detected_rgy_right_boxes,
+    diff_conf):
 
-# # For Raspberry Pi
-# bus = smbus.SMBus(1)     
+    dominant_color_box_list = []  # single list of tuples: (box, box_name)
+    dominant_color = {}
 
-# # MPU6050 device address
-# Device_Address = 0x68
+    def process_conf(best_conf, detected_boxes, direction):
+        for color, conf_value in best_conf.items():
+            if all(conf_value >= other_val + diff_conf
+                   for other_color, other_val in best_conf.items() if other_color != color):
+                dominant_color[direction] = color
+                dominant_color_box_list.extend(detected_boxes[color])
+                # for box in detected_boxes[color]:
+                #     box_id = int(box.cls[0].item())
+                #     box_name = b_class_names[box_id].lower()
+                #     dominant_color_box_list.append((box, box_name))
 
-# # Offsets provided for calibration
-# Ax_offset = 0.05
-# Ay_offset = -0.01
-# Az_offset = -1.11
-# Gx_offset = 0.29
-# Gy_offset = 0.07
-# Gz_offset = 0.09
+    process_conf(best_rgy_conf, detected_rgy_boxes, "forward")
+    process_conf(best_rgy_left_conf, detected_rgy_left_boxes, "left")
+    process_conf(best_rgy_right_conf, detected_rgy_right_boxes, "right")
 
-# # Filtering and Thresholds
-# GYRO_WINDOW = 10
-# GYRO_THRESHOLD = 5.0 # degrees/sec
-
-# # Deques for storing gyro data
-# gyro_buffer = deque(maxlen=GYRO_WINDOW)
-
-# def MPU_Init():
-#     bus.write_byte_data(Device_Address, SMPLRT_DIV, 7)
-#     bus.write_byte_data(Device_Address, PWR_MGMT_1, 1)
-#     bus.write_byte_data(Device_Address, CONFIG, 0)
-#     bus.write_byte_data(Device_Address, GYRO_CONFIG, 24)
-#     bus.write_byte_data(Device_Address, INT_ENABLE, 1)
-
-# def read_raw_data(addr):
-#     high = bus.read_byte_data(Device_Address, addr)
-#     low = bus.read_byte_data(Device_Address, addr + 1)
-#     value = (high << 8) | low
-#     if value > 32768:
-#         value = value - 65536
-#     return value
-
-# def get_motion_data():
-#     acc_x = read_raw_data(ACCEL_XOUT_H)
-#     acc_y = read_raw_data(ACCEL_YOUT_H)
-#     acc_z = read_raw_data(ACCEL_ZOUT_H)
-#     gyro_x = read_raw_data(GYRO_XOUT_H)
-#     gyro_y = read_raw_data(GYRO_YOUT_H)
-#     gyro_z = read_raw_data(GYRO_ZOUT_H)
-    
-#     Ax = acc_x / 16384.0
-#     Ay = acc_y / 16384.0
-#     Az = acc_z / 16384.0
-#     Gx = gyro_x / 131.0
-#     Gy = gyro_y / 131.0
-#     Gz = gyro_z / 131.0
-    
-#     return Ax, Ay, Az, Gx, Gy, Gz
-    
-# def detect_turn():
-#     _, _, _, Gx, Gy, Gz = get_motion_data()
-#     gyro_buffer.append(Gy)
-
-#     # Compute moving average
-#     gyro_avg = sum(gyro_buffer) / len(gyro_buffer)
-
-#     # Determine the turn:
-#     if abs(gyro_avg) > GYRO_THRESHOLD:
-#         if gyro_avg > 0:
-#             return "Right Turn"
-#         else:
-#             return "Left Turn"
-#     else:
-#         return "Straight"
-    
-
-# # def get_direction_and_acceleration():
-# #     Ax, Ay, Az, Gx, Gy, Gz = get_motion_data()
-# #     accel_magnitude = math.sqrt(Ax**2 + Ay**2 + Az**2)
-    
-# #     # Simple directional estimation using Ax and Ay
-# #     if Ax > 0.5:
-# #         direction = "Right"
-# #     elif Ax < -0.5:
-# #         direction = "Left"
-# #     elif Ay > 0.5:
-# #         direction = "Forward"
-# #     elif Ay < -0.5:
-# #         direction = "Backward"
-# #     else:
-# #         direction = "Stationary"
-    
-# #     return direction, accel_magnitude, Ax, Ay, Az, Gx, Gy, Gz
+    return dominant_color, dominant_color_box_list
 
 
-# # ========================================
-# # GPS Setup
-# # ========================================
-# uart = serial.Serial("/dev/ttyUSB0", baudrate=9600, timeout=30)
-# gps = adafruit_gps.GPS(uart, debug=False)
-# gps.send_command(b'PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0')
-# gps.send_command(b'PMTK220,1000')
-# last_print = time.monotonic()
+# Analyze all detected traffic light boxes to determine the dominant color
+#(red, yellow, green) for forward, left-turn, and right-turn directions.
+def analyze_light_bulbs(b_results, b_class_names, b_conf_threshold, diff_conf):
 
+    # Initialize confidence and box containers
+    conf = {
+        "forward": {'red': 0, 'yellow': 0, 'green': 0},
+        "left":    {'red': 0, 'yellow': 0, 'green': 0},
+        "right":   {'red': 0, 'yellow': 0, 'green': 0},
+    }
+    boxes = {
+        "forward": {'red': [], 'yellow': [], 'green': []},
+        "left":    {'red': [], 'yellow': [], 'green': []},
+        "right":   {'red': [], 'yellow': [], 'green': []},
+    }
 
-# ========================================
-# Turn Signal Detector Setup
-# ========================================
-# def turn_signal_callback(prob: float, timestamp: float):
-#     global blinker_on
-#     if prob > 0.4:
-#         blinker_on = True
-#     #print(f"===========================Turn Signal Probability: {prob:.4f} at {timestamp:.2f}")
+    # Map class names to direction and color
+    mapping = {
+        "stop": ("forward", "red"),
+        "stopLeft": ("left", "red"),
+        "stopRight": ("right", "red"),
+        "warning": ("forward", "yellow"),
+        "warningLeft": ("left", "yellow"),
+        "warningRight": ("right", "yellow"),
+        "go": ("forward", "green"),
+        "goLeft": ("left", "green"),
+        "goRight": ("right", "green"),
+    }
 
-# def turn_signal_deactivate_callback(timestamp: float):
-#     global blinker_on
-#     blinker_on = False
-#     #print(f"===========================Turn Signal Deactivated at {timestamp:.2f}")
+    # Process all detected boxes
+    for b_box in b_results[0].boxes:
+        b_conf = b_box.conf[0].item()
+        if b_conf < b_conf_threshold:
+            continue
 
-# turn_signal_detector = TurnSignalDetector()
+        b_name = b_class_names[int(b_box.cls[0].item())]
+        if b_name not in mapping:
+            continue  # skip unknown labels
 
-# # ========================================
-# # Voice Engine Setup
-# # ========================================
-voice_queue = queue.Queue()
+        direction, color = mapping[b_name]
+        boxes[direction][color].append((b_box, b_name))
 
-def speak_queued(text):
-    voice_queue.put(text)
+        # Update best confidence
+        if b_conf > conf[direction][color]:
+            conf[direction][color] = b_conf
 
-voice = Voice("models/voice/piper.onnx")
+    # Determine dominant colors
+    dominant_color = {}
+    dominant_color_box_list = []
 
-def voice_worker():
-    while True:
-        text = voice_queue.get() # Block until an item is available
-        voice.speak(text)
-        voice_queue.task_done()
+    for direction, color_conf in conf.items():
+        for color, val in color_conf.items():
+            if all(val >= other_val + diff_conf
+                   for other_color, other_val in color_conf.items() if other_color != color):
+                dominant_color[direction] = color
+                dominant_color_box_list.extend(boxes[direction][color])
 
+    return dominant_color, dominant_color_box_list
 
-# ========================================
-# Main function integrating vision and IMU
-# ========================================
-def main():
-    start_time = datetime.now()
-
-    # infer_imgsz = 416
-    # bulb_infer_imgsz = 256
-    infer_imgsz = 640
-    bulb_infer_imgsz = 640
-
-    PROCESS_EVERY_N = 10
-    OCR_COOLDOWN_FRAMES = 10
-
-    # print("===========================Starting turn signal detector...")
-    # turn_signal_detector.start_mic(
-    #     on_detect=turn_signal_callback,
-    #     on_deactivate=turn_signal_deactivate_callback
-    # )
-
-    print("===========================Starting voice engine...")  
-    threading.Thread(target=voice_worker, daemon=True).start()
-    
-    l_conf_threshold=0.5 
-    b_conf_threshold=0.5
-    s_conf_threshold=0.4 
-
-    diff_conf = 0.1
+# Plot all boxes in plot_box_list
+def plot_boxes(frame, plot_box_list):
     big_font_scale = 0.6  
     small_font_scale = 0.4
     thickness = 2
-    count = 0
+    for plot_box_item in plot_box_list:
+        # Unpack tuple: box, class_name, offset_x, offset_y
+        box, box_name, offset_x, offset_y = plot_box_item
+        box_conf = box.conf[0].item()
+        x1, y1, x2, y2 = map(int, box.xyxy[0])                    
+
+        x1 = int(x1 + offset_x)
+        y1 = int(y1 + offset_y)
+        x2 = int(x2 + offset_x)
+        y2 = int(y2 + offset_y)
+
+        match box_name:
+            case "trafficLight":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
+                cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
+            case "stop":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                cv2.putText(frame, '', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness) 
+            case "stopLeft":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                cv2.putText(frame, 'left', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness)
+            case "stopRight":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                cv2.putText(frame, 'right', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness)
+            case "go":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), thickness)
+                cv2.putText(frame, '', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
+            case "goLeft":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), thickness)
+                cv2.putText(frame, 'left', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
+            case "goRight":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), thickness)
+                cv2.putText(frame, 'right', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
+            case "warning":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), thickness)
+                cv2.putText(frame, '', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness)                           
+            case "warningLeft":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), thickness)
+                cv2.putText(frame, 'left', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness) 
+            case "warningRight":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), thickness)
+                cv2.putText(frame, 'right', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness)     
+            case "stop"|"stopAhead"|"yield"|"yieldAhead":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)
+            case _:
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
+                cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)  
+    
+# ========================================
+# Main function
+# =============================
+# ===========
+def main():
+
+    start_time = datetime.now()
+
+    imu_controller = IMUController()
+    
+    gps_controller = IMUController()
+
+    print("===========================Starting turn signal detection engine...")
+    turn_signal_detection_manager = TurnSignalDetectionManager("models/sound/turn_signal_cnn.pt", "cpu")
+    turn_signal_detection_manager.start()
+
+    print("===========================Starting voice playback engine...")  
+    voice_playback_manager = VoicePlaybackManager("models/voice/piper.onnx")
+    voice_playback_manager.start()
+  
+
+    # Initialize traffic lights and signs to false
+    traffic_control_flag = {
+        "RedTrafficLight": False, 
+        "RedLeftTurnTrafficLight": False, 
+        "RedRightTurnTrafficLight": False, 
+        "StopTrafficSign": False, 
+        "StopAheadTrafficSign": False, 
+        "YieldTrafficSign": False, 
+        "YieldAheadTrafficSign": False, 
+        "SpeedLimitTrafficSign": False}
+    traffic_control_flag_history = deque(maxlen=3)
+    for _ in range(3):
+        traffic_control_flag_history.append(traffic_control_flag.copy())  
+
+    # traffic_control_name = {
+    #     "RedTrafficLight": "red light", 
+    #     "RedLeftTurnTrafficLight": "red left turn light",
+    #     "RedRightTurnTrafficLight": "red right turn light",
+    #     "StopTrafficSign": "stop sign", 
+    #     "StopAheadTrafficSign": "stop ahead sign", 
+    #     "YieldTrafficSign": "yield sign", 
+    #     "YieldAheadTrafficSign": "yield ahead sign", 
+    #     "SpeedLimitTrafficSign": "speed limit sign"}
+    
+    last_confirmed_traffic_control_flag = traffic_control_flag.copy()
+
+    speed_limit_ocr = SpeedLimitOCR(['en'])
+
+    # last_speed_bbox = None
+    # last_speed_ocr_frame = -10**9
+    # STABILITY_THRESHOLD = 0.5
+    # OCR_COOLDOWN_FRAMES = 10
+
+    l_conf_threshold=0.5 
+    b_conf_threshold=0.5
+    s_conf_threshold=0.4
+    speed_limit_ocr_conf_threshold = 80
+    diff_conf = 0.1
 
     # Load YOLO model
     l_model = YOLO('models/image/best_light.pt')
@@ -210,51 +295,11 @@ def main():
 
     # Start video stream
     print("===========================Starting video capture...")
-    cap = cv2.VideoCapture('tests/video/Demo_1080.mp4')
-
-    # Initialize traffic lights and signs to false
-    traffic_control_flag = {"RedTrafficLight": False, "RedLeftTurnTrafficLight": False, "RedRightTurnTrafficLight": False, "StopTrafficSign": False, "StopAheadTrafficSign": False, "YieldTrafficSign": False, "YieldAheadTrafficSign": False, "SpeedLimitTrafficSign": False}
-    traffic_control_flag_history = deque(maxlen=3)
-    for _ in range(3):
-        traffic_control_flag_history.appendleft(traffic_control_flag.copy())  
-    traffic_control_name = {"RedTrafficLight": "red light", 
-                    "RedLeftTurnTrafficLight": "red left turn light",
-                    "RedRightTurnTrafficLight": "red right turn light",
-                    "StopTrafficSign": "stop sign", 
-                    "StopAheadTrafficSign": "stop ahead sign", 
-                    "YieldTrafficSign": "yield sign", 
-                    "YieldAheadTrafficSign": "yield ahead sign", 
-                    "SpeedLimitTrafficSign": "speed limit sign"}
-    last_voice_traffic_control_flag = {"RedTrafficLight": False, "RedLeftTurnTrafficLight": False, "RedRightTurnTrafficLight": False, "StopTrafficSign": False, "StopAheadTrafficSign": False, "YieldTrafficSign": False, "YieldAheadTrafficSign": False, "SpeedLimitTrafficSign": False}
-    
-    blinker_on = False
-
-    reader = easyocr.Reader(['en'])
-
-    last_speed_bbox = None
-    last_speed_ocr_frame = -10**9
-    STABILITY_THRESHOLD = 0.5
-
-    def is_bbox_stable(bbox1, bbox2):
-        x1_min, y1_min, x1_max, y1_max = bbox1
-        x2_min, y2_min, x2_max, y2_max = bbox2
-
-        inter_x1, inter_y1 = max(x1_min, x2_min), max(y1_min, y2_min)
-        inter_x2, inter_y2 = min(x1_max, x2_max), min(y1_max, y2_max)
-
-        inter_width = max(0, inter_x2 - inter_x1)
-        inter_height = max(0, inter_y2 - inter_y1)
-
-        inter_area = inter_width * inter_height
-
-        if inter_area == 0:
-            return 0.0
-
-        area1 = (x1_max - x1_min) * (y1_max - y1_min)
-        area2 = (x2_max - x2_min) * (y2_max - y2_min)
-
-        return inter_area / (area1 + area2 - inter_area)
-
+    # cap = cv2.VideoCapture(0)
+    # cap = cv2.VideoCapture('tests/video/Demo_1080.mp4')
+    cap = cv2.VideoCapture('tests/video/IMG_1409.mov')
+    count = 0
+    PROCESS_EVERY_N = 10
     while cap.isOpened():
         count += 1
         # Read video frame
@@ -263,46 +308,28 @@ def main():
             break
         
         if (count % PROCESS_EVERY_N== 0):        
-            # Each iteration, reset current_traffic_control_flag and blinker_on
+            # Each iteration, reset current_traffic_control_flag
             current_traffic_control_flag = traffic_control_flag.copy()
-            blinker_on = False
-                
+            plot_box_list = []
 
-            # =================================
-            # Function 1: Traffic Lights Detection via YOLO
+            # =======================================
+            # 1: Traffic Lights Detection via YOLO
             # stop, stopLeft, stopRight, go, goLeft, goRight, warning, warningLeft, warningRight
-            # =================================
+            # =======================================
 
-            # Detect traffic lights
-            l_results = l_model(frame, imgsz=infer_imgsz, verbose=False)   
+            # Detect traffic lights.
+            l_results = l_model(frame, verbose=False)   
             l_class_names = l_model.names            
-            #frame = l_results[0].plot(img=frame, line_width=2) 
 
             # For each traffic light
             for l_box in l_results[0].boxes:
-                if l_box.conf[0] > l_conf_threshold:
+                if l_box.conf[0] > l_conf_threshold:                   
+                    l_box_name = l_class_names[int(l_box.cls[0].item())]           
+                    plot_box_list.append((l_box, l_box_name, 0, 0))
 
-                    # Extract details  
-                    box_conf = l_box.conf[0].item()
-                    x1, y1, x2, y2 = map(int, l_box.xyxy[0])
-                    x, y, w, h = map(int, l_box.xywh[0])
-                    box_id = int(l_box.cls[0].item())               
-                    box_name = l_class_names[box_id]
-                    # print(f"===========================Detected traffic light with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")
-                
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
-                    cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
-                    
-                   
                     # Crop traffic light image box
-                    cropped_traffic_light_frame = crop_image(frame, (x - w/2, y - h/2, w, h))
-
-                    
-                    # Calculate the crop to offsets
-                    offset_x = int(x - w/2)
-                    offset_y = int(y - h/2)
-                    
+                    l_x, l_y, l_w, l_h = map(int, l_box.xywh[0])   
+                    cropped_traffic_light_frame = crop_image(frame, (l_x - l_w/2, l_y - l_h/2, l_w, l_h))                   
                     cropped_traffic_light_frame = cv2.resize(cropped_traffic_light_frame, 
                                                 # (width, height)
                                                 (cropped_traffic_light_frame.shape[1], cropped_traffic_light_frame.shape[0]), 
@@ -310,325 +337,164 @@ def main():
                                                 interpolation=cv2.INTER_CUBIC  
                                                 )
                     
-
-                    # Identify the bulb in the cropped image
-                    b_results = b_model(cropped_traffic_light_frame, imgsz=bulb_infer_imgsz, verbose=False)
-                    # cropped_traffic_light_frame = b_results[0].plot(line_width=1)  
-                    # cv2.imshow("Cropped Frame", cropped_traffic_light_frame)   
-
+                    # Detect light bulbs in the cropped image.
+                    b_results = b_model(cropped_traffic_light_frame, verbose=False)
                     b_class_names = b_model.names   
                     
-                    # Initialize confidence values, handling "forward bulb",  "left turn bulb", and "right turn bulb" separately
-                    best_rgy_conf = {'red': 0, 'green': 0,  'yellow': 0}  
-                    best_rgy_left_conf = {'red': 0, 'green': 0,  'yellow': 0}
-                    best_rgy_right_conf = {'red': 0, 'green': 0,  'yellow': 0}
-                    detected_rgy_boxes = {'red': [], 'green': [],  'yellow': []}  # "forward bulb"                                           
-                    detected_rgy_left_boxes = {'red': [], 'green': [],  'yellow': []}  # "left turn bulb"   
-                    detected_rgy_right_boxes = {'red': [], 'green': [],  'yellow': []}  # "right turn bulb" 
+                    # Determine the dominant color for forward, left, and right directions
+                    dominant_color, dominant_color_box_list = analyze_light_bulbs(
+                        b_results, b_class_names, b_conf_threshold, diff_conf
+                    )
 
-                    # Iterate through all detected traffic light bulbs, 
-                    # append them to detected_rgy_boxes, detected_rgy_left_boxes and detected_rgy_right_boxes accordingly, 
-                    # and update best_rgy_conf, best_rgy_left_conf, best_rgy_right_conf with the highest confidence scores
-                    for b_box in b_results[0].boxes:
-                        if b_box.conf[0] > b_conf_threshold:  
-                            b_box_conf = b_box.conf[0].item()
-                            b_box_id = int(b_box.cls[0].item())               
-                            b_box_name = b_class_names[b_box_id]                      
-                            match b_box_name.lower():
-                                case "stop":
-                                    if b_box_conf>best_rgy_conf['red']:
-                                        best_rgy_conf['red'] = b_box_conf
-                                    detected_rgy_boxes['red'].append(b_box)
-                                case "stopleft":
-                                    if b_box_conf>best_rgy_left_conf['red']:
-                                        best_rgy_left_conf['red'] = b_box_conf
-                                    detected_rgy_left_boxes['red'].append(b_box)
-                                case "stopright":
-                                    if b_box_conf>best_rgy_right_conf['red']:
-                                        best_rgy_right_conf['red'] = b_box_conf
-                                    detected_rgy_right_boxes['red'].append(b_box)
-                                case "go":
-                                    if b_box_conf>best_rgy_conf['green']:
-                                        best_rgy_conf['green'] = b_box_conf
-                                    detected_rgy_boxes['green'].append(b_box)
-                                case "goleft":
-                                    if b_box_conf>best_rgy_left_conf['green']:
-                                        best_rgy_left_conf['green'] = b_box_conf
-                                    detected_rgy_left_boxes['green'].append(b_box)
-                                case "goright":
-                                    if b_box_conf>best_rgy_right_conf['green']:
-                                        best_rgy_right_conf['green'] = b_box_conf
-                                    detected_rgy_right_boxes['green'].append(b_box)
-                                case "warning":
-                                    if b_box_conf>best_rgy_conf['yellow']:
-                                        best_rgy_conf['yellow'] = b_box_conf 
-                                    detected_rgy_boxes['yellow'].append(b_box)                              
-                                case "warningleft":
-                                    if b_box_conf>best_rgy_left_conf['yellow']:
-                                        best_rgy_left_conf['yellow'] = b_box_conf
-                                    detected_rgy_left_boxes['yellow'].append(b_box)
-                                case "warningright":
-                                    if b_box_conf>best_rgy_right_conf['yellow']:
-                                        best_rgy_right_conf['yellow'] = b_box_conf
-                                    detected_rgy_right_boxes['yellow'].append(b_box)      
-
-                    # for color, conf in best_rgy_conf.items():
-                    #     print(f"===========================Detected {color} bulb with {conf:.2f} confidence")
-                    # for color, conf in best_rgy_left_conf.items():
-                    #     print(f"===========================Detected {color} left turn bulb with {conf:.2f} confidence")
-                    # for color, conf in best_rgy_right_conf.items():
-                    #     print(f"===========================Detected {color} right turn bulb with {conf:.2f} confidence")
+                    if dominant_color.get("forward") == "red":
+                        current_traffic_control_flag["RedTrafficLight"] = True
+                    if dominant_color.get("left") == "red":
+                        current_traffic_control_flag["RedLeftTurnTrafficLight"] = True
+                    if dominant_color.get("right") == "red":
+                        current_traffic_control_flag["RedRightTurnTrafficLight"] = True
                     
-                
-                    # Stores all bulb boxes which will be plotted
-                    plot_boxes = []
-
-                    # Determine the dominant color of the "forward bulb", since only one of red, yellow, or green can be active at a time, and set traffic_control_flag to true
-                    for key, value in best_rgy_conf.items():
-                        if all(value >= other_val + diff_conf for other_k, other_val in best_rgy_conf.items() if other_k != key): 
-                            if key=="red":
-                                current_traffic_control_flag["RedTrafficLight"] = True
-                            plot_boxes.extend(detected_rgy_boxes[key])     
-
-
-                    for key, value in best_rgy_left_conf.items():
-                        if all(value >= other_val + diff_conf for other_k, other_val in best_rgy_left_conf.items() if other_k != key):
-                            if key=="red":
-                                current_traffic_control_flag["RedLeftTurnTrafficLight"] = True
-                            plot_boxes.extend(detected_rgy_left_boxes[key])   
-
-
-                    for key, value in best_rgy_right_conf.items():
-                        if all(value >= other_val + diff_conf for other_k, other_val in best_rgy_right_conf.items() if other_k != key):
-                            if key=="red":
-                                current_traffic_control_flag["RedRightTurnTrafficLight"] = True
-                            plot_boxes.extend(detected_rgy_right_boxes[key])      
-
-                    # Plot all boxes in plot_boxes
-                    for plot_box in plot_boxes:
-                        # p_box_conf = plot_box.conf[0].item()
-                        p_x1, p_y1, p_x2, p_y2 = map(int, plot_box.xyxy[0])
-                        # p_x, p_y, p_w, p_h = map(int, plot_box.xywh[0])
-                        p_box_id = int(plot_box.cls[0].item())               
-                        p_box_name = b_class_names[p_box_id]  
-                        
-
-                        p_x1 = int(p_x1 + offset_x)
-                        p_y1 = int(p_y1 + offset_y)
-                        p_x2 = int(p_x2 + offset_x)
-                        p_y2 = int(p_y2 + offset_y)
-
-                        match p_box_name:
-                            case "stop":
-                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 0, 255), thickness)
-                                cv2.putText(frame, '', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness) 
-                            case "stopLeft":
-                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 0, 255), thickness)
-                                cv2.putText(frame, 'left', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness)
-                            case "stopRight":
-                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 0, 255), thickness)
-                                cv2.putText(frame, 'right', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness)
-                            case "go":
-                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 255, 0), thickness)
-                                cv2.putText(frame, '', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
-                            case "goLeft":
-                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 255, 0), thickness)
-                                cv2.putText(frame, 'left', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
-                            case "goRight":
-                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 255, 0), thickness)
-                                cv2.putText(frame, 'right', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
-                            case "warning":
-                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 255, 255), thickness)
-                                cv2.putText(frame, '', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness)                           
-                            case "warningLeft":
-                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 255, 255), thickness)
-                                cv2.putText(frame, 'left', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness) 
-                            case "warningRight":
-                                cv2.rectangle(frame, (p_x1, p_y1), (p_x2, p_y2), (0, 255, 255), thickness)
-                                cv2.putText(frame, 'right', (int(p_x2), int(p_y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness)     
-                            
-
-            # =====================================
-            # Function 2: Traffic Signs Detection via YOLO
-            # stop, stopAhead, yield, yieldAhead, speedLimit
-            # ======================================
-
-            # Detect traffic signs
-            s_results = s_model(frame, imgsz=infer_imgsz, verbose=False)          
-            s_class_names = s_model.names
-            
-            # Loop each box to find "stop", "stopAhead", "yield", "yieldAhead" signs and speed limit signs
-            best_speed_limit_value = 1000
-            best_speed_limit_conf = 0
-            for s_box in s_results[0].boxes:
-                if s_box.conf[0] > s_conf_threshold:
-                    box_conf = s_box.conf[0].item()
-                    x1, y1, x2, y2 = map(int, s_box.xyxy[0])
-                    x, y, w, h = map(int, s_box.xywh[0])
-                    box_id = int(s_box.cls[0].item())               
-                    box_name = s_class_names[box_id]
-
-                    # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
-                    # cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
-                    #     cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)
-                    
-                    # Check stop, stop ahead, yield, and yield ahead
-                    if box_name in ["stop", "stopAhead", "yield", "yieldAhead"]:
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
-                        cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)   
-                        # print(f"===========================Detected {box_name} with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")                                   
-                        match box_name:
-                            case "stop":
-                                current_traffic_control_flag["StopTrafficSign"]=True
-                            case "stopAhead":
-                                current_traffic_control_flag["StopAheadTrafficSign"]=True
-                            case "yield":
-                                current_traffic_control_flag["YieldTrafficSign"]=True
-                            case "yieldAhead":
-                                current_traffic_control_flag["YieldAheadTrafficSign"]=True                    
-                    # Speed Limit Signs
-                    else: 
-                        # print(f"===========================Detected {box_name} with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")                                                         
-                        cropped = frame[y1:y2, x1:x2]
-                        target_words = ['speed', 'limit']
-                        found_targets = {target: False for target in target_words}
-
-                        # Call EasyOCR 
-                        box = (x1, y1, x2, y2)
-
-                        do_ocr = False
-                        if (last_speed_bbox is not None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD) or (count - last_speed_ocr_frame) >= OCR_COOLDOWN_FRAMES:
-                            do_ocr = True
-
-                        
-                        if do_ocr:
-                            last_speed_bbox = box
-                            last_speed_ocr_frame = count
-                            results = reader.readtext(cropped)
-                            all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
-                            # print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
-                            for _, text, _ in results:
-                                for target in target_words:
-                                    if not found_targets[target] and fuzz.ratio(text.lower(), target) > 0.8:
-                                        found_targets[target] = True 
-
-
-                            # Check if both 'speed' and 'limit' are found   
-                            if found_targets['speed'] and found_targets['limit']:                                                                       
-                                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
-                                cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10),
-                                    cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
-                                current_traffic_control_flag["SpeedLimitTrafficSign"]=True
-
-                                match = re.search(r'\b\d{2}\b', all_lowercase_text)
-                                if match:
-                                    speed_limit_value = int(match.group())                                
-                                    if box_conf >= best_speed_limit_conf:                    
-                                        best_speed_limit_conf = s_box.conf[0].item()
-                                        best_speed_limit_value = speed_limit_value
-                                    # print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  
-
-
-            
-            # gps.update()
-            # global last_print
-            # current = time.monotonic()
-            # if current - last_print >= 1.0:
-            #     last_print = current
-            #     if not gps.has_fix:
-            #         print('===========================GPS Waiting for fix...')
-            #     else:
-            #         print('===========================GPS shows Latitude: {0:.6f} degrees'.format(gps.latitude))
-            #         print('===========================GPS shows Longitude: {0:.6f} degrees'.format(gps.longitude))
-
-            #         # Get the speed
-            #         if gps.speed_knots is not None:
-            #             driving_mph = gps.speed_knots * 1.15078
-            #             print('===========================Driving Speed: {0:.2f} mph'.format(driving_mph))
-            #             # Check if the speed exceeds the limit
-            #             if driving_mph > best_speed_limit_value:
-            #                speak_queued("Slow down!")
-            #         else:
-            #             print('===========================Driving speed is not available')
-
-            
-
-            # =====================================
-            # Turning Signal Detection via IMU sensor and microphone
-            # ==========================================
-            # detected_turn = detect_turn()
-            # print(f"===========================Detected Turn: {detected_turn}")
-            # if not blinker_on and detected_turn != "Straight":
-            #     speak_queued(f"Don't forget to turn on your turn signal when turning!")
-                       
+                    # Calculate the crop to offsets
+                    offset_x = int(l_x - l_w/2)
+                    offset_y = int(l_y - l_h/2)
+                    plot_box_list.extend([(b_box, b_box_name, offset_x, offset_y) for (b_box, b_box_name) in dominant_color_box_list])
 
             # =======================================
-            # Trigger Voice Feedback Based on Analysis
-            # ========================================      
+            # 2: Traffic Signs Detection via YOLO
+            # stop, stopAhead, yield, yieldAhead, speedLimit
+            # =======================================
+
+            # Detect traffic signs.
+            s_results = s_model(frame, verbose=False)          
+            s_class_names = s_model.names
+            
+            # Iterate through all detected traffic signs. 
+            best_speed_limit_conf = 0
+            best_speed_limit_value = None
+            for s_box in s_results[0].boxes:
+                if s_box.conf[0] > s_conf_threshold:                                          
+                    s_box_name = s_class_names[int(s_box.cls[0].item())]
+                    match s_box_name:
+                        case "stop":
+                            current_traffic_control_flag["StopTrafficSign"]=True
+                            plot_box_list.append((s_box, s_box_name, 0, 0))                                                   
+                        case "stopAhead":
+                            current_traffic_control_flag["StopAheadTrafficSign"]=True
+                            plot_box_list.append((s_box, s_box_name, 0, 0))
+                        case "yield":
+                            current_traffic_control_flag["YieldTrafficSign"]=True
+                            plot_box_list.append((s_box, s_box_name, 0, 0))
+                        case "yieldAhead":
+                            current_traffic_control_flag["YieldAheadTrafficSign"]=True
+                            plot_box_list.append((s_box, s_box_name, 0, 0))
+                        case _:  
+                            s_x1, s_y1, s_x2, s_y2 = map(int, s_box.xyxy[0])                                                      
+                            cropped = frame[s_y1:s_y2, s_x1:s_x2]
+                            
+                            # do_ocr = False
+                            # if (last_speed_bbox is not None and is_bbox_stable(last_speed_bbox, s_box) >= STABILITY_THRESHOLD) or (count - last_speed_ocr_frame) >= OCR_COOLDOWN_FRAMES:
+                            #     do_ocr = True
+                            
+                            do_ocr = True
+                            if do_ocr:
+                                # last_speed_bbox = s_box
+                                # last_speed_ocr_frame = count
+                                speed_limit_value = speed_limit_ocr.extract_speed_limit(cropped, speed_limit_ocr_conf_threshold)
+                                if speed_limit_value is not None:                                                              
+                                    current_traffic_control_flag["SpeedLimitTrafficSign"]=True   
+                                    plot_box_list.append((s_box, s_box_name, 0, 0)) 
+                                    if (s_box_conf := s_box.conf[0].item()) >= best_speed_limit_conf:
+                                        best_speed_limit_conf, best_speed_limit_value = s_box_conf, speed_limit_value
+                                    # print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  
+
+            traffic_control_flag_history.append(current_traffic_control_flag)
+
+            # =======================================
+            # 3: Voice Playback
+            # =======================================     
             # Voice triggered when the following traffic signal detected or undetected
             # 1. traffic light: red light, red left turn light, and red right turn light 
             # 2. traffic sign: stop , stop ahead, yield, yield ahead, and speed limit when speeding
-            traffic_control_flag_history.appendleft(current_traffic_control_flag)
+
             # print([traffic_control_flag_history[i]["SpeedLimitTrafficSign"] for i in range(len(traffic_control_flag_history))])
-            # print(last_voice_traffic_control_flag["SpeedLimitTrafficSign"])
+            # print(last_confirmed_traffic_control_flag["SpeedLimitTrafficSign"])
 
-            voice_text = ""
 
-            do_turn_signal_check = False
-            do_speeding_check = False
+            # # For demo only
+            # do_turn_signal_check = False
+            # do_speeding_check = False
+            # do_turn_signal_check = (count>=1275 and count<1285) or (count>=1785 and count<1795)
+            # do_speeding_check = (count>=2195 and count<2205) or (count>=3395 and count<3405)
 
-            do_turn_signal_check = (count>=1315 and count<1325) or (count>=1785 and count<1795)
-            # do_speeding_check = (count>=2215 and count<2225) or (count>=3405 and count<3415)
-            do_speeding_check = (count>=2195 and count<2205) or (count>=3395 and count<3405)
+            # if best_speed_limit_value is not None:
+            #    driving_mph = random.randint(best_speed_limit_value, best_speed_limit_value+5)
 
-            if do_turn_signal_check:
-                # speak_queued(f"Do not forget to turn signal on when turning. ")  
-                # print(f"==========================={voice_text} Do not forget to turn signal on when turning. ") 
-                voice_text = f"{voice_text} Do not forget to use your turn signal when turning. "    
+            # if do_turn_signal_check:
+            #      voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/turn_signal.wav") 
+            # 
+                                  
+            # # End of for Demo
+
+            # Voice Alert for turn signal
+            if not turn_signal_detection_manager.is_blinker_on and imu_controller.detect_turn() != "Straight":
+                # voice_playback_manager.speak_queued("Do not forget to use your turn signal when turning! ")
+                # print("===========================Do not forget to use your turn signal when turning! ")  
+               voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/turn_signal.wav") 
             
+            # Voice Alert for speeding
+            if current_traffic_control_flag["SpeedLimitTrafficSign"] and not last_confirmed_traffic_control_flag["SpeedLimitTrafficSign"]:
+                gps_controller.update() 
+                driving_mph = gps_controller.get_speed_mph()   
+                if best_speed_limit_value is not None and driving_mph > best_speed_limit_value:
+                    # voice_playback_manager.speak_queued("You are above the detected speed limit. ") 
+                    # print("===========================You are above the detected speed limit. ")                            
+                    voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/speed_limit.wav")
+                last_confirmed_traffic_control_flag["SpeedLimitTrafficSign"] = current_traffic_control_flag["SpeedLimitTrafficSign"]      
+
+            
+
+            # Voice Alert for others
             for key in current_traffic_control_flag:
-                # If traffic control has been detected for three times in a row and previous status is not detected.            
-                if traffic_control_flag_history[0][key] and not last_voice_traffic_control_flag[key]:
-                    if key == "SpeedLimitTrafficSign":
-                        # For demo only
-                        driving_mph = random.randint(best_speed_limit_value, best_speed_limit_value+5)                      
+                # If a traffic control has been detected three times in a row and was not previously confirmed as detected.                       
+                if all(traffic_control_flag_history[i][key] for i in range(3)) and not last_confirmed_traffic_control_flag[key]:
 
-                        if driving_mph > best_speed_limit_value and do_speeding_check:
-                            # speak_queued(f"{traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your current speed is {driving_mph}. Please slow down.") 
-                            # print(f"==========================={traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down.")                            
-                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. The speed limit is {best_speed_limit_value}. Your speed is {driving_mph}. Please slow down. "
+                    #if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRightTurnTrafficLight", "StopTrafficSign", "StopAheadTrafficSign", "YieldTrafficSign", "YieldAheadTrafficSign"):
+                        # voice_playback_manager.speak_queued(f"{traffic_control_name[key]} detected. ")  
+                        # print(f"==========================={traffic_control_name[key]} detected. ") 
+                    match key:
+                        case "RedTrafficLight":
+                            voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/red_light.wav")
+                        case "RedLeftTurnTrafficLight" :
+                            voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/red_left_light.wav")
+                        case "StopTrafficSign":
+                            voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/stop.wav")
+                        case "StopAheadTrafficSign":
+                            voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/stop_ahead.wav")
+                        case "YieldTrafficSign":
+                            voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/yield.wav")
+                        case "YieldAheadTrafficSign":
+                            voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/yield_ahead.wav")
+                
 
-                        last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
-
-                    elif all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3)):                  
-                        if key in ("StopAheadTrafficSign", "YieldTrafficSign", "YieldAheadTrafficSign"):
-                            # speak_queued(f"{traffic_control_name[key]} detected. Please slow down. ")  
-                            # print(f"==========================={traffic_control_name[key]} detected. Please slow down. ") 
-                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. "  
-                        else:
-                            # speak_queued(f"{traffic_control_name[key]} detected. Please stop. ")  
-                            # print(f"==========================={traffic_control_name[key]} detected. Please stop. ") 
-                            voice_text = f"{voice_text} {traffic_control_name[key]} detected. "    
-
-                        last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
+                    last_confirmed_traffic_control_flag[key] = current_traffic_control_flag[key]
                                      
-                # If traffic control has not been detected for three times in a row and previous status is detected.  
-                if (not traffic_control_flag_history[0][key] 
-                    and all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3))
-                    and last_voice_traffic_control_flag[key]
-                    ):             
-                    if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRighTurnTrafficLight"):
-                        # speak_queued(f"{traffic_control_name[key]} no longer detected.")
+                # If a traffic control has not been detected for three times in a row and was previously confirmed as detected.    
+                if all(not traffic_control_flag_history[i][key] for i in range(3)) and last_confirmed_traffic_control_flag[key]:          
+                    #if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRightTurnTrafficLight"):
+                        # voice_playback_manager.speak_queued(f"{traffic_control_name[key]} no longer detected.")
                         # print(f"==========================={traffic_control_name[key]} no longer detected.")
-                        voice_text = f"{voice_text} {traffic_control_name[key]} no longer detected. "   
+                    match key:
+                        case "RedTrafficLight":
+                            voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/red_light_off.wav")
+                        case "RedLeftTurnTrafficLight" :
+                            voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/red_left_light_off.wav")
                     
-                    last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
+                    last_confirmed_traffic_control_flag[key] = current_traffic_control_flag[key]
+      
 
-            if voice_text!="":
-                # speak_queued(voice_text) 
-                print(voice_text)
-                voice.speak(voice_text) # Comment out when running on Windows
+            # =======================================
+            # 4: Plotting
+            # =======================================
+            plot_boxes(frame, plot_box_list)  
 
             # Set up a named window with full-screen support
             cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
@@ -638,14 +504,17 @@ def main():
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            # if (count % 10 == 0):
-            #    # Small delay to ease CPU load
-            #    sleep(0.17) 
+            if (count % 10 == 0):
+               # Small delay to ease CPU load
+               sleep(0.20) 
 
             # print(f"count is {count}, do_speeding_check is {do_speeding_check}, do_turn_signal_check is {do_turn_signal_check}")
 
     cap.release()
     cv2.destroyAllWindows()
+
+    turn_signal_detection_manager.stop()
+    voice_playback_manager.stop()
     
     end_time = datetime.now()
     duration = end_time - start_time

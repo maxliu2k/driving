@@ -6,9 +6,8 @@ import zipfile
 import random
 
 
-
 # pass in model name
-model_name='traffic_signs' #{'traffic_lights', 'traffic_signs'}
+model_name='traffic_lights' #{'traffic_lights', 'traffic_signs'}
 model_type='LISA_Houston' #{'LISA_Houston', 'LISA', 'Houston'}
 does_generate_LISA_yolov8 = False
 
