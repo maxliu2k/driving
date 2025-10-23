@@ -217,7 +217,7 @@ def main():
 
     # Start video stream
     print("===========================Starting video capture...")
-    cap = cv2.VideoCapture('tests/video/Demo_1080_2.mp4')
+    cap = cv2.VideoCapture('tests/video/Demo_1080_CongApp.mp4')
 
     # Initialize traffic lights and signs to false
     traffic_control_flag = {"RedTrafficLight": False, "RedLeftTurnTrafficLight": False, "RedRightTurnTrafficLight": False, "StopTrafficSign": False, "StopAheadTrafficSign": False, "YieldTrafficSign": False, "YieldAheadTrafficSign": False, "SpeedLimitTrafficSign": False}
@@ -262,6 +262,8 @@ def main():
         return inter_area / (area1 + area2 - inter_area)
 
     while cap.isOpened():
+
+        
         count += 1
         # Read video frame
         ret, frame = cap.read()
@@ -269,6 +271,14 @@ def main():
             break
         
         if (count % PROCESS_EVERY_N== 0):        
+
+            #for demo
+            do_plot_speedlimit = False
+            do_plot_speedlimit = (count>=256 and count<=310) or (count>=1256)
+
+            print(f"count is {count}, do_plot_speedlimit is {do_plot_speedlimit}")
+            #end of demo
+
             # Each iteration, reset current_traffic_control_flag and blinker_on
             current_traffic_control_flag = traffic_control_flag.copy()
             blinker_on = False
@@ -495,53 +505,57 @@ def main():
                             case "yield":
                                 current_traffic_control_flag["YieldTrafficSign"]=True
                             case "yieldAhead":
-                                current_traffic_control_flag["YieldAheadTrafficSign"]=True                    
-                    # Speed Limit Signs
-                    elif (count>=256 and count<=310) or (count>=1276 and count<=1312): 
+                                current_traffic_control_flag["YieldAheadTrafficSign"]=True 
+
+                    # begin of demo
+                    elif do_plot_speedlimit: 
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
                         cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
                         current_traffic_control_flag["SpeedLimitTrafficSign"]=True
-                        
-                        # # print(f"===========================Detected {box_name} with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")                                                         
-                        # cropped = frame[y1:y2, x1:x2]
-                        # target_words = ['speed', 'limit']
-                        # found_targets = {target: False for target in target_words}
+                    # end of demo
 
-                        # # Call EasyOCR 
-                        # box = (x1, y1, x2, y2)
+                    # # Speed Limit Signs
+                    # else:   
+                    #     # print(f"===========================Detected {box_name} with {box_conf:.2f} confidence at [{x1}, {y1}, {x2}, {y2}] with weight {w} and height {h}")                                                         
+                    #     cropped = frame[y1:y2, x1:x2]
+                    #     target_words = ['speed', 'limit']
+                    #     found_targets = {target: False for target in target_words}
 
-                        # # do_ocr = False
-                        # # if (last_speed_bbox is not None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD) or (count - last_speed_ocr_frame) >= OCR_COOLDOWN_FRAMES:
-                        # #     do_ocr = True
+                    #     # Call EasyOCR 
+                    #     box = (x1, y1, x2, y2)
 
-                        # do_ocr = True
-                        # if do_ocr:
-                        #     last_speed_bbox = box
-                        #     last_speed_ocr_frame = count
-                        #     results = reader.readtext(cropped)
-                        #     all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
-                        #     print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
-                        #     for _, text, _ in results:
-                        #         for target in target_words:
-                        #             if not found_targets[target] and fuzz.ratio(text.lower(), target) > 80:
-                        #                 found_targets[target] = True 
+                    #     # do_ocr = False
+                    #     # if (last_speed_bbox is not None and is_bbox_stable(last_speed_bbox, box) >= STABILITY_THRESHOLD) or (count - last_speed_ocr_frame) >= OCR_COOLDOWN_FRAMES:
+                    #     #     do_ocr = True
+
+                    #     do_ocr = True
+                    #     if do_ocr:
+                    #         last_speed_bbox = box
+                    #         last_speed_ocr_frame = count
+                    #         results = reader.readtext(cropped)
+                    #         all_lowercase_text = ' '.join([text for (_, text, _) in results]).lower()
+                    #         print(f"===========================Extracted sign words using EasyOcr: {all_lowercase_text}")
+                    #         for _, text, _ in results:
+                    #             for target in target_words:
+                    #                 if not found_targets[target] and fuzz.ratio(text.lower(), target) > 80:
+                    #                     found_targets[target] = True 
 
 
-                        #     # Check if both 'speed' and 'limit' are found   
-                        #     if found_targets['speed'] and found_targets['limit']:                                                                       
-                        #         cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
-                        #         cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10),
-                        #             cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
-                        #         current_traffic_control_flag["SpeedLimitTrafficSign"]=True
+                    #         # Check if both 'speed' and 'limit' are found   
+                    #         if found_targets['speed'] and found_targets['limit']:                                                                       
+                    #             cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
+                    #             cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10),
+                    #                 cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
+                    #             current_traffic_control_flag["SpeedLimitTrafficSign"]=True
 
-                        #         match = re.search(r'\b\d{2}\b', all_lowercase_text)
-                        #         if match:
-                        #             speed_limit_value = int(match.group())                                
-                        #             if box_conf >= best_speed_limit_conf:                    
-                        #                 best_speed_limit_conf = s_box.conf[0].item()
-                        #                 best_speed_limit_value = speed_limit_value
-                        #             # print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  
+                    #             match = re.search(r'\b\d{2}\b', all_lowercase_text)
+                    #             if match:
+                    #                 speed_limit_value = int(match.group())                                
+                    #                 if box_conf >= best_speed_limit_conf:                    
+                    #                     best_speed_limit_conf = s_box.conf[0].item()
+                    #                     best_speed_limit_value = speed_limit_value
+                    #                 # print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  
 
 
             
@@ -576,82 +590,68 @@ def main():
             # =======================================
             # Trigger Voice Feedback Based on Analysis
             # ========================================      
-            # Voice triggered when the following traffic signal detected or undetected
-            # 1. traffic light: red light, red left turn light, and red right turn light 
-            # 2. traffic sign: stop , stop ahead, yield, yield ahead, and speed limit when speeding
-            traffic_control_flag_history.appendleft(current_traffic_control_flag)
-            # print([traffic_control_flag_history[i]["SpeedLimitTrafficSign"] for i in range(len(traffic_control_flag_history))])
-            # print(last_voice_traffic_control_flag["SpeedLimitTrafficSign"])
+            # # Voice triggered when the following traffic signal detected or undetected
+            # # 1. traffic light: red light, red left turn light, and red right turn light 
+            # # 2. traffic sign: stop , stop ahead, yield, yield ahead, and speed limit when speeding
+            # traffic_control_flag_history.appendleft(current_traffic_control_flag)
+            # # print([traffic_control_flag_history[i]["SpeedLimitTrafficSign"] for i in range(len(traffic_control_flag_history))])
+            # # print(last_voice_traffic_control_flag["SpeedLimitTrafficSign"])
 
-            # For demo only
-            do_turn_signal_check = False
-            do_speeding_check = False
-            do_turn_signal_check = (count>=862 and count<868) 
-            do_speeding_check = (count>=1288 and count<1294)
-            if do_turn_signal_check:
-                 speak_queued("mobile_app/max_driving/assets/audios/turn_signal.wav") 
-            # End of for Demo
-
-            #if not blinker_on and detected_turn != "Straight":
-            #     # speak_queued("Do not forget to use your turn signal when turning! ")
-            #     # print("===========================Do not forget to use your turn signal when turning! ")  
-            #     speak_queued("mobile_app/max_driving/assets/audios/turn_signal.wav")  
+            # #if not blinker_on and detected_turn != "Straight":
+            # #     # speak_queued("Do not forget to use your turn signal when turning! ")
+            # #     # print("===========================Do not forget to use your turn signal when turning! ")  
+            # #     speak_queued("mobile_app/max_driving/assets/audios/turn_signal.wav")  
             
-            for key in current_traffic_control_flag:
-                # If traffic control has been detected for three times in a row and previous status is not detected.            
-                if traffic_control_flag_history[0][key] and not last_voice_traffic_control_flag[key]:
-                    if key == "SpeedLimitTrafficSign":
+            # for key in current_traffic_control_flag:
+            #     # If traffic control has been detected for three times in a row and previous status is not detected.            
+            #     if traffic_control_flag_history[0][key] and not last_voice_traffic_control_flag[key]:
+            #         if key == "SpeedLimitTrafficSign":
+            #             if driving_mph > best_speed_limit_value and do_speeding_check:
+            #                 # speak_queued("You are above the detected speed limit. ") 
+            #                 print("===========================You are above the detected speed limit. ")                            
+            #                 speak_queued("mobile_app/max_driving/assets/audios/speed_limit.wav")
 
-                        # For Demo only
-                        driving_mph = best_speed_limit_value+3                   
-                        # End of for Demo
+            #             last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
 
-                        if driving_mph > best_speed_limit_value and do_speeding_check:
-                            # speak_queued("You are above the detected speed limit. ") 
-                            # print("===========================You are above the detected speed limit. ")                            
-                            speak_queued("mobile_app/max_driving/assets/audios/speed_limit.wav")
-
-                        last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
-
-                    elif all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3)):                                          
-                        # speak_queued(f"{traffic_control_name[key]} detected. ")  
-                        # print(f"==========================={traffic_control_name[key]} detected. ") 
-                        match key:
-                            case "RedTrafficLight":
-                                speak_queued("mobile_app/max_driving/assets/audios/red_light.wav")
-                            case "RedLeftTurnTrafficLight" :
-                                speak_queued("mobile_app/max_driving/assets/audios/red_left_light.wav")
-                            case "StopTrafficSign":
-                                speak_queued("mobile_app/max_driving/assets/audios/stop.wav")
-                            # case "StopAheadTrafficSign":
-                            #     speak_queued("mobile_app/max_driving/assets/audios/stop_ahead.wav")
-                            case "YieldTrafficSign":
-                                speak_queued("mobile_app/max_driving/assets/audios/yield.wav")
-                            case "YieldAheadTrafficSign":
-                                speak_queued("mobile_app/max_driving/assets/audios/yield_ahead.wav")
+            #         elif all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3)):                                          
+            #             # speak_queued(f"{traffic_control_name[key]} detected. ")  
+            #             # print(f"==========================={traffic_control_name[key]} detected. ") 
+            #             match key:
+            #                 case "RedTrafficLight":
+            #                     speak_queued("mobile_app/max_driving/assets/audios/red_light_slow.wav")
+            #                 case "RedLeftTurnTrafficLight" :
+            #                     speak_queued("mobile_app/max_driving/assets/audios/red_left_light.wav")
+            #                 case "StopTrafficSign":
+            #                     speak_queued("mobile_app/max_driving/assets/audios/stop_slow.wav")
+            #                 # case "StopAheadTrafficSign":
+            #                 #     speak_queued("mobile_app/max_driving/assets/audios/stop_ahead.wav")
+            #                 case "YieldTrafficSign":
+            #                     speak_queued("mobile_app/max_driving/assets/audios/yield.wav")
+            #                 case "YieldAheadTrafficSign":
+            #                     speak_queued("mobile_app/max_driving/assets/audios/yield_ahead.wav")
                         
 
-                        last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
+            #             last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
                                      
-                # If traffic control has not been detected for three times in a row and previous status is detected.  
-                if (not traffic_control_flag_history[0][key] and last_voice_traffic_control_flag[key]
-                    and all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3))
-                    ):             
-                    #if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRightTurnTrafficLight"):
-                        # speak_queued(f"{traffic_control_name[key]} no longer detected.")
-                        # print(f"==========================={traffic_control_name[key]} no longer detected.")
-                    match key:
-                        case "RedTrafficLight":
-                            speak_queued("mobile_app/max_driving/assets/audios/red_light_off.wav")
-                        case "RedLeftTurnTrafficLight" :
-                            speak_queued("mobile_app/max_driving/assets/audios/red_left_light_off.wav")
+            #     # If traffic control has not been detected for three times in a row and previous status is detected.  
+            #     if (not traffic_control_flag_history[0][key] and last_voice_traffic_control_flag[key]
+            #         and all(traffic_control_flag_history[0][key] == traffic_control_flag_history[i][key] for i in range(1, 3))
+            #         ):             
+            #         #if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRightTurnTrafficLight"):
+            #             # speak_queued(f"{traffic_control_name[key]} no longer detected.")
+            #             # print(f"==========================={traffic_control_name[key]} no longer detected.")
+            #         match key:
+            #             case "RedTrafficLight":
+            #                 speak_queued("mobile_app/max_driving/assets/audios/red_light_off.wav")
+            #             case "RedLeftTurnTrafficLight" :
+            #                 speak_queued("mobile_app/max_driving/assets/audios/red_left_light_off.wav")
                     
-                    last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
-              
+            #         last_voice_traffic_control_flag[key] = traffic_control_flag_history[0][key]
+         
 
             # Set up a named window with full-screen support
             cv2.namedWindow("Annotated Frame", cv2.WND_PROP_FULLSCREEN)
-            # cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+            cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
             cv2.imshow("Annotated Frame", frame)
 
             # Exit on 'q' key press
@@ -661,7 +661,6 @@ def main():
             #    # Small delay to ease CPU load
             #    sleep(0.016) 
 
-            # print(f"count is {count}, do_speeding_check is {do_speeding_check}, do_turn_signal_check is {do_turn_signal_check}")
 
     cap.release()
     cv2.destroyAllWindows()
