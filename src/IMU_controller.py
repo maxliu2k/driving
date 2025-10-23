@@ -1,4 +1,4 @@
-import smbus
+# import smbus
 from collections import deque
 
 # ===============================
