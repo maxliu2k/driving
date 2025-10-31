@@ -58,7 +58,7 @@ Future<void> processFrame(CameraImage image, int rotation) async {
         minimumScore: 0.1,
         iOUThreshold: 0.3
       );
-      print('Detected bulbs: $detectedBulbs');
+      print('Detected bulbs: ${detectedBulbs.length}');
     } catch (e) {
       print('Error predicting bulbs: $e');
     }
@@ -71,7 +71,7 @@ Future<void> processFrame(CameraImage image, int rotation) async {
         minimumScore: 0.1,
         iOUThreshold: 0.3
       );
-      print('Detected lights: $detectedLights');
+      print('Detected lights: ${detectedLights.length}');
     } catch (e) {
       print('Error predicting lights: $e');
     }
@@ -84,7 +84,7 @@ Future<void> processFrame(CameraImage image, int rotation) async {
         minimumScore: 0.1,
         iOUThreshold: 0.3
       );
-      print('Detected signs: $detectedSigns');
+      print('Detected signs: ${detectedSigns.length}');
     } catch (e) {
       print('Error predicting signs: $e');
     }

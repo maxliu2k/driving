@@ -34,14 +34,43 @@ class _DashboardWidgetState extends State<DashboardWidget>
   final animationsMap = <String, AnimationInfo>{};
 
   // Line Chart Data Initialization
+  // List<dynamic> xData = List.generate(
+  //   5,
+  //   (index) => 0,
+  // );
+  // List<dynamic> yData = List.generate(
+  //   5,
+  //   (index) => 0,
+  // );
   List<dynamic> xData = List.generate(
-    5,
-    (index) => 0,
+    30,
+    (index) => index + 1,
   );
-  List<dynamic> yData = List.generate(
-    5,
-    (index) => 0,
-  );
+  // List<dynamic> yData = List.generate(
+  //   30,
+  //   (index) => index == 0 ? 90 : Random().nextInt(100),
+  // );
+  List<int> yData =[85, 92, 86, 88, 89, 88, 86, 91, 89, 89, 90, 90, 88, 92, 91, 89, 91, 93, 92, 91, 90, 93, 91, 95, 92, 94, 95, 96, 93, 95];
+
+
+  List<Map<String, dynamic>> recentSessions = [
+     {
+      'sessionTime': '15 mins',
+      'lightsRan': 0,      
+      'stopSignsMissed': 1,
+      'speedViolations': 1,
+      'turnSignalsMissed': 1,
+      'score': 93,
+    },
+    {
+      'sessionTime': '20 mins',
+      'lightsRan': 0,      
+      'stopSignsMissed': 1,
+      'speedViolations': 0,
+      'turnSignalsMissed': 1,
+      'score': 95,
+    },
+  ];
 
   @override
   void initState() {
@@ -478,7 +507,7 @@ class _DashboardWidgetState extends State<DashboardWidget>
                                                             .spaceBetween,
                                                     children: [
                                                       Text(
-                                                        'No Previous Session',
+                                                        (recentSessions.isEmpty) ? 'No Previous Session' : 'Last Session (10/20/25)',
                                                         style: FlutterFlowTheme
                                                                 .of(context)
                                                             .bodySmall
@@ -502,8 +531,9 @@ class _DashboardWidgetState extends State<DashboardWidget>
                                                         EdgeInsetsDirectional
                                                             .fromSTEB(0.0, 4.0,
                                                                 0.0, 0.0),
-                                                    child: Text(
-                                                      'Session time:\nSpeed limit violations:\nStop signs missed:\nYellow/red lights ran:\nTurning signals missed:',
+                                                    child: Text( // most recent entry
+                                                      (recentSessions.isEmpty) ? 'Session time:\nRed lights ran:\nStop signs missed:\nSpeed limit violations:\nTurning signals missed:' :
+                                                      "Session time: ${recentSessions.last['sessionTime']}\nRed lights ran: ${recentSessions.last['lightsRan']}\nStop signs missed: ${recentSessions.last['stopSignsMissed']}\nSpeed limit violations: ${recentSessions.last['speedViolations']}\nTurning signals missed: ${recentSessions.last['turnSignalsMissed']}",                                                   
                                                       style: FlutterFlowTheme
                                                               .of(context)
                                                           .bodyMedium
@@ -559,7 +589,7 @@ class _DashboardWidgetState extends State<DashboardWidget>
                                                         ),
                                                         Expanded(
                                                           child: Text(
-                                                            'null',
+                                                            (recentSessions.isEmpty) ? 'null' : "${recentSessions.last['score']}",
                                                             style: FlutterFlowTheme
                                                                     .of(context)
                                                                 .bodyMedium
@@ -665,58 +695,108 @@ class _DashboardWidgetState extends State<DashboardWidget>
                           Padding(
                             padding: EdgeInsetsDirectional.fromSTEB(
                                 16.0, 0.0, 16.0, 0.0),
-                            child: Container(
-                              width: double.infinity,
-                              height: 200.0,
-                              child: FlutterFlowLineChart(
-                                data: [
-                                  FFLineChartData(
-                                    xData: xData,
-                                    yData: yData,
-                                    settings: LineChartBarData(
-                                      color: Color(0xFF4B39EF),
-                                      barWidth: 2.0,
-                                      isCurved: true,
-                                      preventCurveOverShooting: true,
-                                      dotData: FlDotData(show: false),
-                                      belowBarData: BarAreaData(
-                                        show: true,
-                                        color: Color(0x4C4B39EF),
-                                      ),
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  height: 200.0,
+                                  child: FlutterFlowLineChart(
+                                    data: [
+                                      FFLineChartData(
+                                        xData: xData,
+                                        yData: yData,
+                                        settings: LineChartBarData(
+                                          color: Color(0xFF4B39EF),
+                                          barWidth: 2.0,
+                                          isCurved: true,
+                                          preventCurveOverShooting: true,
+                                          dotData: FlDotData(show: false),
+                                          belowBarData: BarAreaData(
+                                            show: true,
+                                            color: Color(0x4C4B39EF),
+                                          ),
+                                        ),
+                                      )
+                                    ],
+                                    chartStylingInfo: ChartStylingInfo(
+                                      enableTooltip: true,
+                                      backgroundColor: Colors.white,
+                                      showBorder: false
                                     ),
-                                  )
-                                ],
-                                chartStylingInfo: ChartStylingInfo(
-                                  enableTooltip: true,
-                                  backgroundColor: Colors.white,
-                                  showBorder: false,
+                                    //axisBounds: AxisBounds(),
+                                    axisBounds: AxisBounds(
+                                      minY: 70,
+                                      maxY: 100,
+                                    ),
+                                    xAxisLabelInfo: AxisLabelInfo(
+                                      title: 'Last 30 Sessions',
+                                      titleTextStyle: FlutterFlowTheme.of(context)
+                                          .bodyMedium
+                                          .override(
+                                            fontFamily: 'Plus Jakarta Sans',
+                                            color: Color(0xFF14181B),
+                                            fontSize: 14.0,
+                                            letterSpacing: 0.0,
+                                            fontWeight: FontWeight.normal,
+                                          ),
+                                    ),
+                                    // yAxisLabelInfo: AxisLabelInfo(
+                                    //   title: 'Score',
+                                    //   titleTextStyle: FlutterFlowTheme.of(context)
+                                    //       .bodyMedium
+                                    //       .override(
+                                    //         fontFamily: 'Plus Jakarta Sans',
+                                    //         color: Color(0xFF14181B),
+                                    //         fontSize: 14.0,
+                                    //         letterSpacing: 0.0,
+                                    //         fontWeight: FontWeight.normal,
+                                    //       ),
+                                    // ),
+                                    yAxisLabelInfo: AxisLabelInfo(
+                                      title: 'Score',
+                                      titleTextStyle: FlutterFlowTheme.of(context)
+                                          .bodyMedium
+                                          .override(
+                                            fontFamily: 'Plus Jakarta Sans',
+                                            color: Color(0xFF14181B),
+                                            fontSize: 14.0,
+                                            letterSpacing: 0.0,
+                                            fontWeight: FontWeight.normal,
+                                          ),
+                                      labelTextStyle: FlutterFlowTheme.of(context)
+                                          .bodyMedium
+                                          .override(
+                                            fontFamily: 'Plus Jakarta Sans',
+                                            fontSize: 10.0, // make tick labels smaller
+                                          ),
+                                      showLabels: true,   
+                                      labelInterval: 10, // show label every 10
+                                      labelFormatter: LabelFormatter(
+                                        numberFormat: (double val) => val.toInt().toString(),
+                                      ),// display integer
+                                    ),
+                                  ),
                                 ),
-                                axisBounds: AxisBounds(),
-                                xAxisLabelInfo: AxisLabelInfo(
-                                  title: 'Last x Days',
-                                  titleTextStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        fontFamily: 'Plus Jakarta Sans',
-                                        color: Color(0xFF14181B),
-                                        fontSize: 14.0,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FontWeight.normal,
-                                      ),
-                                ),
-                                yAxisLabelInfo: AxisLabelInfo(
-                                  title: 'Score',
-                                  titleTextStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        fontFamily: 'Plus Jakarta Sans',
-                                        color: Color(0xFF14181B),
-                                        fontSize: 14.0,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FontWeight.normal,
-                                      ),
-                                ),
-                              ),
+                                Positioned(
+                                  left: 47.0,
+                                  child: Container(
+                                    width: 100,
+                                    height: 175.0,
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        left: BorderSide(
+                                          color: Color(0xFFE0E3E7),
+                                          width: 1.0,
+                                        ),
+                                        bottom: BorderSide(
+                                          color: Color(0xFFE0E3E7),
+                                          width: 1.0,
+                                        ),
+                                      )
+                                    ),
+                                  ),
+                                )
+                              ],
                             ),
                           ),
                         ],

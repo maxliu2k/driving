@@ -218,6 +218,7 @@ class _NavBarPageState extends State<NavBarPage> {
         ),
       );
     } else {
+      print("Current page: $_currentPageName");
       return Scaffold(
         // appBar: AppBar(
         //   title: Text(_currentPageName),
@@ -237,7 +238,7 @@ class _NavBarPageState extends State<NavBarPage> {
         //   ),
         // ),
         body: Row(children: [
-          SafeArea(
+          (_currentPageName != "Session") ? SafeArea(
             child: SideMenu(
               controller: sideMenuController,
               style: SideMenuStyle(
@@ -249,7 +250,7 @@ class _NavBarPageState extends State<NavBarPage> {
                       EdgeInsets.symmetric(horizontal: 5, vertical: 25)),
               items: sidebarItems,
             ),
-          ),
+          ) : Container(),
           Expanded(child: _currentPage ?? tabs[_currentPageName] as Widget),
         ]),
       );

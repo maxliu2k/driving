@@ -3,6 +3,7 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import 'dart:math';
 import 'dart:ui';
 import '/flutter_flow/random_data_util.dart' as random_data;
 import 'package:flutter/material.dart';
@@ -29,43 +30,80 @@ class _RecentWidgetState extends State<RecentWidget> {
 
   // Score Data
   List<dynamic> scoreXData = List.generate(
-    5,
-    (index) => 0,
+    30,
+    (index) => index + 1,
   );
-  List<dynamic> scoreYData = List.generate(
-    5,
-    (index) => 0,
-  );
+  // List<dynamic> scoreYData = List.generate(
+  //   30,
+  //   (index) => index == 0 ? 90 : Random().nextInt(100),
+  // );
+  List<int> scoreYData =[85, 92, 86, 88, 89, 88, 86, 91, 89, 89, 90, 90, 88, 92, 91, 89, 91, 93, 92, 91, 90, 93, 91, 95, 92, 94, 95, 96, 93, 95];
 
-  // Violations Data
-  List<dynamic> violationsXData = List.generate(
-    5,
-    (index) => 0,
+
+  // Red Lights Data
+  List<dynamic> redLightsXData = List.generate(
+    30,
+    (index) => index + 1,
   );
-  List<dynamic> violationsYData = List.generate(
-    5,
-    (index) => 0,
-  );
+  // List<dynamic> redLightsYData = List.generate(
+  //   30,
+  //   (index) => index == 0 ? 1 : Random().nextInt(5),
+  // );
+  List<int> redLightsYData = [2, 0, 1, 1, 1, 0, 2, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  
 
   // Stop Signs Data
   List<dynamic> stopSignsXData = List.generate(
-    5,
-    (index) => 0,
+    30,
+    (index) => index + 1,
   );
-  List<dynamic> stopSignsYData = List.generate(
-    5,
-    (index) => 0,
-  );
+  // List<dynamic> stopSignsYData = List.generate(
+  //   30,
+  //   (index) => index == 0 ? 2 : Random().nextInt(5),
+  // );
 
-  // Yellow Lights Data
-  List<dynamic> yellowLightsXData = List.generate(
-    5,
-    (index) => 0,
+  List<int> stopSignsYData = [3, 2, 1, 2, 1, 2, 3, 2, 1, 2, 1, 3, 2, 1, 1, 2, 0, 2, 0, 1, 0, 1, 0, 2, 0, 0, 1, 0, 1, 1];
+
+  // Speed Limit Violations Data
+  List<dynamic> speedingXData = List.generate(
+    30,
+    (index) => index + 1,
   );
-  List<dynamic> yellowLightsYData = List.generate(
-    5,
-    (index) => 0,
+  // List<dynamic> speedingYData = List.generate(
+  //   30,
+  //   (index) => index == 0 ? 0 : Random().nextInt(5),
+  // );
+  List<int> speedingYData = [3, 1, 2, 2, 3, 1, 2, 1, 1, 0, 1, 2, 2, 2, 0, 1, 2, 0, 1, 0, 2, 0, 2, 1, 1, 0, 1, 1, 1, 0];
+
+  // Turning Data
+  List<dynamic> turningXData = List.generate(
+    30,
+    (index) => index + 1,
   );
+  // List<dynamic> turningYData = List.generate(
+  //   30,
+  //   (index) => index == 0 ? 1 : Random().nextInt(5),
+  // );
+  List<int> turningYData = [3, 2, 2, 1, 2, 1, 3, 1, 1, 0, 2, 1, 2, 1, 0, 2, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1];
+
+  List<Map<String, dynamic>> recentSessions = [
+    {
+      'sessionTime': '15 mins',
+      'lightsRan': 0,      
+      'stopSignsMissed': 1,
+      'speedViolations': 1,
+      'turnSignalsMissed': 1,
+      'score': 93,
+    },
+    {
+      'sessionTime': '20 mins',
+      'lightsRan': 0,      
+      'stopSignsMissed': 1,
+      'speedViolations': 0,
+      'turnSignalsMissed': 1,
+      'score': 95,
+    },
+  ];
 
   @override
   void initState() {
@@ -82,6 +120,9 @@ class _RecentWidgetState extends State<RecentWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Check device orientation
+    final orient = MediaQuery.of(context).orientation;
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -90,7 +131,7 @@ class _RecentWidgetState extends State<RecentWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Color(0xFFAFABFF),
-        appBar: AppBar(
+        appBar: (orient == Orientation.portrait) ? AppBar(
           backgroundColor: Colors.white,
           automaticallyImplyLeading: false,
           leading: FlutterFlowIconButton(
@@ -116,7 +157,7 @@ class _RecentWidgetState extends State<RecentWidget> {
           actions: [],
           centerTitle: false,
           elevation: 0.0,
-        ),
+        ) : null,
         body: SafeArea(
           top: true,
           child: SingleChildScrollView(
@@ -191,7 +232,7 @@ class _RecentWidgetState extends State<RecentWidget> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              'No Previous Session',
+                                              (recentSessions.isEmpty) ? 'No Previous Session' :'Last Session (10/20/25)',
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
@@ -213,7 +254,8 @@ class _RecentWidgetState extends State<RecentWidget> {
                                               EdgeInsetsDirectional.fromSTEB(
                                                   0.0, 4.0, 0.0, 0.0),
                                           child: Text(
-                                            'Session time:\nSpeed limit violations:\nStop signs missed:\nYellow lights ran:\nTurning signals missed:',
+                                            (recentSessions.isEmpty) ? 'Session time:\nRed lights ran:\nStop signs missed:\nSpeed limit violations:\nTurning signals missed:' :
+                                                      "Session time: ${recentSessions.last['sessionTime']}\nRed lights ran: ${recentSessions.last['lightsRan']}\nStop signs missed: ${recentSessions.last['stopSignsMissed']}\nSpeed limit violations: ${recentSessions.last['speedViolations']}\nTurning signals missed: ${recentSessions.last['turnSignalsMissed']}",
                                             style: FlutterFlowTheme.of(context)
                                                 .bodyMedium
                                                 .override(
@@ -256,7 +298,7 @@ class _RecentWidgetState extends State<RecentWidget> {
                                               ),
                                               Expanded(
                                                 child: Text(
-                                                  'null',
+                                                  (recentSessions.isEmpty) ? 'null' : "${recentSessions.last['score']}",
                                                   style: FlutterFlowTheme.of(
                                                           context)
                                                       .bodyMedium
@@ -329,10 +371,10 @@ class _RecentWidgetState extends State<RecentWidget> {
                               ),
                             ),
                           ),
-                          ListView(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            scrollDirection: Axis.vertical,
+                          Column(
+                            // padding: EdgeInsets.zero,
+                            // shrinkWrap: true,
+                            // scrollDirection: Axis.vertical,
                             children: [
                               Column(
                                 mainAxisSize: MainAxisSize.max,
@@ -357,7 +399,9 @@ class _RecentWidgetState extends State<RecentWidget> {
                                   Padding(
                                     padding: EdgeInsetsDirectional.fromSTEB(
                                         16.0, 0.0, 16.0, 0.0),
-                                    child: Container(
+                                    child: Stack(
+                                      children: [
+                                        Container(
                                       width: double.infinity,
                                       height: 200.0,
                                       child: FlutterFlowLineChart(
@@ -383,9 +427,13 @@ class _RecentWidgetState extends State<RecentWidget> {
                                           backgroundColor: Colors.white,
                                           showBorder: false,
                                         ),
-                                        axisBounds: AxisBounds(),
+                                        //axisBounds: AxisBounds(),
+                                        axisBounds: AxisBounds(
+                                          minY: 70,
+                                          maxY: 100,
+                                        ),
                                         xAxisLabelInfo: AxisLabelInfo(
-                                          title: 'Last x Days',
+                                          title: 'Last 30 Sessions',
                                           titleTextStyle: FlutterFlowTheme.of(
                                                   context)
                                               .bodyMedium
@@ -399,8 +447,7 @@ class _RecentWidgetState extends State<RecentWidget> {
                                         ),
                                         yAxisLabelInfo: AxisLabelInfo(
                                           title: 'Score',
-                                          titleTextStyle: FlutterFlowTheme.of(
-                                                  context)
+                                          titleTextStyle: FlutterFlowTheme.of(context)
                                               .bodyMedium
                                               .override(
                                                 fontFamily: 'Plus Jakarta Sans',
@@ -409,11 +456,48 @@ class _RecentWidgetState extends State<RecentWidget> {
                                                 letterSpacing: 0.0,
                                                 fontWeight: FontWeight.normal,
                                               ),
+                                          labelTextStyle: FlutterFlowTheme.of(context)
+                                              .bodyMedium
+                                              .override(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                fontSize: 10.0, // make tick labels smaller
+                                              ),
+                                          showLabels: true,   
+                                          labelInterval: 10, // show label every 10
+                                          labelFormatter: LabelFormatter(
+                                            numberFormat: (double val) => val.toInt().toString(),
+                                          ),// display integer
                                         ),
                                       ),
                                     ),
+                                        Positioned(
+                                          left: 47.0,
+                                          child: Container(
+                                            width: 100,
+                                            height: 175.0,
+                                            decoration: BoxDecoration(
+                                              border: Border(
+                                                left: BorderSide(
+                                                  color: Color(0xFFE0E3E7),
+                                                  width: 1.0,
+                                                ),
+                                                bottom: BorderSide(
+                                                  color: Color(0xFFE0E3E7),
+                                                  width: 1.0,
+                                                ),
+                                              )
+                                            ),
+                                          ),
+                                        )
+                                      ],
+                                    ),
                                   ),
                                 ],
+                              ),
+                              Divider(
+                                thickness: 1,
+                                indent: 25,
+                                endIndent: 25
                               ),
                               Column(
                                 mainAxisSize: MainAxisSize.max,
@@ -424,7 +508,7 @@ class _RecentWidgetState extends State<RecentWidget> {
                                       padding: EdgeInsetsDirectional.fromSTEB(
                                           0.0, 15.0, 0.0, 0.0),
                                       child: Text(
-                                        'Speed Limit Violations',
+                                        'Red Lights Ran',
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
@@ -438,14 +522,16 @@ class _RecentWidgetState extends State<RecentWidget> {
                                   Padding(
                                     padding: EdgeInsetsDirectional.fromSTEB(
                                         16.0, 0.0, 16.0, 0.0),
-                                    child: Container(
+                                    child: Stack(
+                                      children: [
+                                        Container(
                                       width: double.infinity,
                                       height: 200.0,
                                       child: FlutterFlowLineChart(
                                         data: [
                                           FFLineChartData(
-                                            xData: violationsXData,
-                                            yData: violationsYData,
+                                            xData: redLightsXData,
+                                            yData: redLightsYData,
                                             settings: LineChartBarData(
                                               color: Color(0xFF4B39EF),
                                               barWidth: 2.0,
@@ -464,9 +550,13 @@ class _RecentWidgetState extends State<RecentWidget> {
                                           backgroundColor: Colors.white,
                                           showBorder: false,
                                         ),
-                                        axisBounds: AxisBounds(),
+                                        //axisBounds: AxisBounds(),
+                                        axisBounds: AxisBounds(
+                                          minY: 0,
+                                          maxY: 5,
+                                        ),
                                         xAxisLabelInfo: AxisLabelInfo(
-                                          title: 'Last x Days',
+                                          title: 'Last 30 Sessions',
                                           titleTextStyle: FlutterFlowTheme.of(
                                                   context)
                                               .bodyMedium
@@ -490,11 +580,44 @@ class _RecentWidgetState extends State<RecentWidget> {
                                                 letterSpacing: 0.0,
                                                 fontWeight: FontWeight.normal,
                                               ),
+                                          showLabels: true,   
+                                          labelInterval: 1, // show label every 10
+                                          labelFormatter: LabelFormatter(
+                                            numberFormat: (double val) => val.toInt().toString(),
+                                          ),// display integer
                                         ),
                                       ),
                                     ),
+                                        Positioned(
+                                          left: 47.0,
+                                          child: Container(
+                                            width: 100,
+                                            height: 175.0,
+                                            decoration: BoxDecoration(
+                                              border: Border(
+                                                left: BorderSide(
+                                                  color: Color(0xFFE0E3E7),
+                                                  width: 1.0,
+                                                ),
+                                                bottom: BorderSide(
+                                                  color: Color(0xFFE0E3E7),
+                                                  width: 1.0,
+                                                ),
+                                              )
+                                            ),
+                                          ),
+                                        )
+                                      ],                                
+                                    )                                 
                                   ),
-                                  Column(
+                                ],
+                              ),
+                              Divider(
+                                thickness: 1,
+                                indent: 25,
+                                endIndent: 25
+                              ),
+                              Column(
                                     mainAxisSize: MainAxisSize.max,
                                     children: [
                                       Align(
@@ -519,73 +642,108 @@ class _RecentWidgetState extends State<RecentWidget> {
                                       Padding(
                                         padding: EdgeInsetsDirectional.fromSTEB(
                                             16.0, 0.0, 16.0, 0.0),
-                                        child: Container(
-                                          width: double.infinity,
-                                          height: 200.0,
-                                          child: FlutterFlowLineChart(
-                                            data: [
-                                              FFLineChartData(
-                                                xData: stopSignsXData,
-                                                yData: stopSignsYData,
-                                                settings: LineChartBarData(
-                                                  color: Color(0xFF4B39EF),
-                                                  barWidth: 2.0,
-                                                  isCurved: true,
-                                                  preventCurveOverShooting:
-                                                      true,
-                                                  dotData:
-                                                      FlDotData(show: false),
-                                                  belowBarData: BarAreaData(
-                                                    show: true,
-                                                    color: Color(0x4C4B39EF),
-                                                  ),
+                                        child: Stack(
+                                          children: [ 
+                                            Container(
+                                              width: double.infinity,
+                                              height: 200.0,
+                                              child: FlutterFlowLineChart(
+                                                data: [
+                                                  FFLineChartData(
+                                                    xData: stopSignsXData,
+                                                    yData: stopSignsYData,
+                                                    settings: LineChartBarData(
+                                                      color: Color(0xFF4B39EF),
+                                                      barWidth: 2.0,
+                                                      isCurved: true,
+                                                      preventCurveOverShooting:
+                                                          true,
+                                                      dotData:
+                                                          FlDotData(show: false),
+                                                      belowBarData: BarAreaData(
+                                                        show: true,
+                                                        color: Color(0x4C4B39EF),
+                                                      ),
+                                                    ),
+                                                  )
+                                                ],
+                                                chartStylingInfo: ChartStylingInfo(
+                                                  enableTooltip: true,
+                                                  backgroundColor: Colors.white,
+                                                  showBorder: false,
                                                 ),
-                                              )
-                                            ],
-                                            chartStylingInfo: ChartStylingInfo(
-                                              enableTooltip: true,
-                                              backgroundColor: Colors.white,
-                                              showBorder: false,
-                                            ),
-                                            axisBounds: AxisBounds(),
-                                            xAxisLabelInfo: AxisLabelInfo(
-                                              title: 'Last x Days',
-                                              titleTextStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .override(
-                                                        fontFamily:
-                                                            'Plus Jakarta Sans',
-                                                        color:
-                                                            Color(0xFF14181B),
-                                                        fontSize: 14.0,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FontWeight.normal,
-                                                      ),
-                                            ),
-                                            yAxisLabelInfo: AxisLabelInfo(
-                                              title: 'Signs',
-                                              titleTextStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .override(
-                                                        fontFamily:
-                                                            'Plus Jakarta Sans',
-                                                        color:
-                                                            Color(0xFF14181B),
-                                                        fontSize: 14.0,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FontWeight.normal,
-                                                      ),
+                                                //axisBounds: AxisBounds(),
+                                                axisBounds: AxisBounds(
+                                                  minY: 0,
+                                                  maxY: 5,
+                                                ),
+                                                xAxisLabelInfo: AxisLabelInfo(
+                                                  title: 'Last 30 Sessions',
+                                                  titleTextStyle:
+                                                      FlutterFlowTheme.of(context)
+                                                          .bodyMedium
+                                                          .override(
+                                                            fontFamily:
+                                                                'Plus Jakarta Sans',
+                                                            color:
+                                                                Color(0xFF14181B),
+                                                            fontSize: 14.0,
+                                                            letterSpacing: 0.0,
+                                                            fontWeight:
+                                                                FontWeight.normal,
+                                                          ),
+                                                ),
+                                                yAxisLabelInfo: AxisLabelInfo(
+                                                  title: 'Violations',
+                                                  titleTextStyle:
+                                                      FlutterFlowTheme.of(context)
+                                                          .bodyMedium
+                                                          .override(
+                                                            fontFamily:
+                                                                'Plus Jakarta Sans',
+                                                            color:
+                                                                Color(0xFF14181B),
+                                                            fontSize: 14.0,
+                                                            letterSpacing: 0.0,
+                                                            fontWeight:
+                                                                FontWeight.normal,
+                                                          ),
+                                                  showLabels: true,   
+                                                  labelInterval: 1, // show label every 10
+                                                  labelFormatter: LabelFormatter(
+                                                    numberFormat: (double val) => val.toInt().toString(),
+                                              ),//
                                             ),
                                           ),
                                         ),
+                                            Positioned(
+                                                left: 47.0,
+                                                child: Container(
+                                                  width: 100,
+                                                  height: 175.0,
+                                                  decoration: BoxDecoration(
+                                                    border: Border(
+                                                      left: BorderSide(
+                                                        color: Color(0xFFE0E3E7),
+                                                        width: 1.0,
+                                                      ),
+                                                      bottom: BorderSide(
+                                                        color: Color(0xFFE0E3E7),
+                                                        width: 1.0,
+                                                      ),
+                                                    )
+                                                  ),
+                                                ),
+                                              )
+                                          ],
+                                        )
                                       ),
                                     ],
                                   ),
-                                ],
+                              Divider(
+                                thickness: 1,
+                                indent: 25,
+                                endIndent: 25
                               ),
                               Column(
                                 mainAxisSize: MainAxisSize.max,
@@ -596,7 +754,7 @@ class _RecentWidgetState extends State<RecentWidget> {
                                       padding: EdgeInsetsDirectional.fromSTEB(
                                           0.0, 15.0, 0.0, 0.0),
                                       child: Text(
-                                        'Yellow Lights Ran',
+                                        'Speed Limit Violations',
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
@@ -610,14 +768,16 @@ class _RecentWidgetState extends State<RecentWidget> {
                                   Padding(
                                     padding: EdgeInsetsDirectional.fromSTEB(
                                         16.0, 0.0, 16.0, 0.0),
-                                    child: Container(
+                                    child: Stack(
+                                      children: [
+                                        Container(
                                       width: double.infinity,
                                       height: 200.0,
                                       child: FlutterFlowLineChart(
                                         data: [
                                           FFLineChartData(
-                                            xData: yellowLightsXData,
-                                            yData: yellowLightsYData,
+                                            xData: speedingXData,
+                                            yData: speedingYData,
                                             settings: LineChartBarData(
                                               color: Color(0xFF4B39EF),
                                               barWidth: 2.0,
@@ -636,9 +796,13 @@ class _RecentWidgetState extends State<RecentWidget> {
                                           backgroundColor: Colors.white,
                                           showBorder: false,
                                         ),
-                                        axisBounds: AxisBounds(),
+                                        //axisBounds: AxisBounds(),
+                                        axisBounds: AxisBounds(
+                                          minY: 0,
+                                          maxY: 5,
+                                        ),
                                         xAxisLabelInfo: AxisLabelInfo(
-                                          title: 'Last x Days',
+                                          title: 'Last 30 Sessions',
                                           titleTextStyle: FlutterFlowTheme.of(
                                                   context)
                                               .bodyMedium
@@ -651,7 +815,112 @@ class _RecentWidgetState extends State<RecentWidget> {
                                               ),
                                         ),
                                         yAxisLabelInfo: AxisLabelInfo(
-                                          title: 'Lights',
+                                          title: 'Violations',
+                                          titleTextStyle: FlutterFlowTheme.of(
+                                                  context)
+                                              .bodyMedium
+                                              .override(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                color: Color(0xFF14181B),
+                                                fontSize: 14.0,
+                                                letterSpacing: 0.0,
+                                                fontWeight: FontWeight.normal,
+                                              ),
+                                          showLabels: true,   
+                                          labelInterval: 1, // show label every 10
+                                          labelFormatter: LabelFormatter(
+                                            numberFormat: (double val) => val.toInt().toString(),
+                                          ),//
+                                        ),
+                                      ),
+                                    ),
+                                        Positioned(
+                                          left: 47.0,
+                                          child: Container(
+                                            width: 100,
+                                            height: 175.0,
+                                            decoration: BoxDecoration(
+                                              border: Border(
+                                                left: BorderSide(
+                                                  color: Color(0xFFE0E3E7),
+                                                  width: 1.0,
+                                                ),
+                                                bottom: BorderSide(
+                                                  color: Color(0xFFE0E3E7),
+                                                  width: 1.0,
+                                                ),
+                                              )
+                                            ),
+                                          ),
+                                        )
+                                      ],
+                                    )
+                                  ),
+                                ],
+                              ),
+                              Divider(
+                                thickness: 1,
+                                indent: 25,
+                                endIndent: 25
+                              ),
+                              Column(
+                                mainAxisSize: MainAxisSize.max,
+                                children: [
+                                  Align(
+                                    alignment: AlignmentDirectional(0.0, 1.0),
+                                    child: Padding(
+                                      padding: EdgeInsetsDirectional.fromSTEB(
+                                          0.0, 15.0, 0.0, 0.0),
+                                      child: Text(
+                                        'Turning Signals Missed',
+                                        style: FlutterFlowTheme.of(context)
+                                            .bodyMedium
+                                            .override(
+                                              fontFamily: 'Inter',
+                                              fontSize: 18.0,
+                                              letterSpacing: 0.0,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                        16.0, 0.0, 16.0, 0.0),
+                                    child: Stack(
+                                      children: [
+                                        Container(
+                                      width: double.infinity,
+                                      height: 200.0,
+                                      child: FlutterFlowLineChart(
+                                        data: [
+                                          FFLineChartData(
+                                            xData: turningXData,
+                                            yData: turningYData,
+                                            settings: LineChartBarData(
+                                              color: Color(0xFF4B39EF),
+                                              barWidth: 2.0,
+                                              isCurved: true,
+                                              preventCurveOverShooting: true,
+                                              dotData: FlDotData(show: false),
+                                              belowBarData: BarAreaData(
+                                                show: true,
+                                                color: Color(0x4C4B39EF),
+                                              ),
+                                            ),
+                                          )
+                                        ],
+                                        chartStylingInfo: ChartStylingInfo(
+                                          enableTooltip: true,
+                                          backgroundColor: Colors.white,
+                                          showBorder: false,
+                                        ),
+                                        //axisBounds: AxisBounds(),
+                                        axisBounds: AxisBounds(
+                                          minY: 0,
+                                          maxY: 5,
+                                        ),
+                                        xAxisLabelInfo: AxisLabelInfo(
+                                          title: 'Last 30 Sessions',
                                           titleTextStyle: FlutterFlowTheme.of(
                                                   context)
                                               .bodyMedium
@@ -663,30 +932,47 @@ class _RecentWidgetState extends State<RecentWidget> {
                                                 fontWeight: FontWeight.normal,
                                               ),
                                         ),
+                                        yAxisLabelInfo: AxisLabelInfo(
+                                          title: 'Violations',
+                                          titleTextStyle: FlutterFlowTheme.of(
+                                                  context)
+                                              .bodyMedium
+                                              .override(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                color: Color(0xFF14181B),
+                                                fontSize: 14.0,
+                                                letterSpacing: 0.0,
+                                                fontWeight: FontWeight.normal,
+                                              ),
+                                          showLabels: true,   
+                                          labelInterval: 1, // show label every 10
+                                          labelFormatter: LabelFormatter(
+                                            numberFormat: (double val) => val.toInt().toString(),
+                                          ),//
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              Column(
-                                mainAxisSize: MainAxisSize.max,
-                                children: [
-                                  Align(
-                                    alignment: AlignmentDirectional(0.0, 1.0),
-                                    child: Padding(
-                                      padding: EdgeInsetsDirectional.fromSTEB(
-                                          0.0, 15.0, 0.0, 0.0),
-                                      child: Text(
-                                        'Turning SIgnals Missed',
-                                        style: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .override(
-                                              fontFamily: 'Inter',
-                                              fontSize: 18.0,
-                                              letterSpacing: 0.0,
+                                        Positioned(
+                                          left: 47.0,
+                                          child: Container(
+                                            width: 100,
+                                            height: 175.0,
+                                            decoration: BoxDecoration(
+                                              border: Border(
+                                                left: BorderSide(
+                                                  color: Color(0xFFE0E3E7),
+                                                  width: 1.0,
+                                                ),
+                                                bottom: BorderSide(
+                                                  color: Color(0xFFE0E3E7),
+                                                  width: 1.0,
+                                                ),
+                                              )
                                             ),
-                                      ),
-                                    ),
+                                          ),
+                                        )
+                                      ],
+                                    )
                                   ),
                                   // Padding(
                                   //   padding: EdgeInsetsDirectional.fromSTEB(

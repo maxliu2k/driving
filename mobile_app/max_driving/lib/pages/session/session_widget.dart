@@ -15,6 +15,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'session_model.dart';
 import 'package:camera/camera.dart';
+// import 'package:video_player/video_player.dart';
 import 'package:max_driving/services/processing.dart';
 export 'session_model.dart';
 
@@ -42,6 +43,11 @@ class _SessionWidgetState extends State<SessionWidget>
 
   // last frame timestamp
   DateTime? lastFrameTimestamp;
+
+  // // Video player variables
+  // late VideoPlayerController _videoController;
+  // late Future<void> _initializeVideoPlayerFuture;
+
 
   @override
   void initState() {
@@ -80,12 +86,24 @@ class _SessionWidgetState extends State<SessionWidget>
         setState(() {});
       },
     );
+
+    // _videoController = VideoPlayerController.asset(
+    //   'assets/videos/Demo_1080_CongApp.mp4', // or use VideoPlayerController.file(File('path/to/video.mp4'))
+    // );
+
+    // _initializeVideoPlayerFuture = _videoController.initialize().then((_) {
+    //   _videoController.setLooping(true);
+    //   _videoController.play();
+    //   setState(() {});
+    // });
+
   }
 
   @override
   void dispose() {
     _model.dispose();
     _cameraController.dispose();
+    // _videoController.dispose();
     super.dispose();
   }
 
@@ -197,6 +215,23 @@ class _SessionWidgetState extends State<SessionWidget>
                           }
                         },
                       ),
+                      
+                      // child: FutureBuilder<void>(
+                      //   future: _initializeVideoPlayerFuture,
+                      //   builder: (context, snapshot) {
+                      //     if (snapshot.connectionState == ConnectionState.done) {
+                      //       return AspectRatio(
+                      //         aspectRatio: _videoController.value.aspectRatio,
+                      //         child: ClipRRect(
+                      //           borderRadius: BorderRadius.circular(20.0),
+                      //           child: VideoPlayer(_videoController),
+                      //         ),
+                      //       );
+                      //     } else {
+                      //       return const Center(child: CircularProgressIndicator());
+                      //     }
+                      //   },
+                      // )
                     ),
                   ),
                   Padding(

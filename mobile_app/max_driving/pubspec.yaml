@@ -69,6 +69,7 @@ dependencies:
   url_launcher_platform_interface: 2.3.2
   url_launcher_web: 2.3.3
   url_launcher_windows: 3.1.2
+  
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -76,6 +77,7 @@ dependencies:
   pytorch_lite: ^4.3.2
   flutter_launcher_icons: ^0.14.3
   easy_sidemenu: ^0.6.1
+  # video_player: ^2.8.1
 
 dependency_overrides:
   http: 1.2.2
@@ -102,7 +104,7 @@ flutter:
   assets:
     - assets/fonts/
     - assets/images/
-    # - assets/videos/
+    - assets/videos/
     - assets/audios/
     - assets/rive_animations/
     - assets/pdfs/
