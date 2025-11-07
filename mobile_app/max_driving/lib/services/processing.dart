@@ -11,31 +11,19 @@ Future<void> loadModels() async {
   try {
     // Load bestbulbs.torchscript
     modelBulbs = await PytorchLite.loadObjectDetectionModel(
-      'assets/models/bestbulbs.torchscript',
-      6,
-      640,
-      640,
-      labelPath: 'assets/labels/labels_bulbs.txt',
-      objectDetectionModelType: ObjectDetectionModelType.yolov8
-    );
+        'assets/models/bestbulbs.torchscript', 6, 640, 640,
+        labelPath: 'assets/labels/labels_bulbs.txt',
+        objectDetectionModelType: ObjectDetectionModelType.yolov8);
     // Load bestlights.torchscript
     modelLights = await PytorchLite.loadObjectDetectionModel(
-      'assets/models/bestlights.torchscript',
-      7,
-      640,
-      640,
-      labelPath: 'assets/labels/labels_lights.txt',
-      objectDetectionModelType: ObjectDetectionModelType.yolov8
-    );
+        'assets/models/bestlights.torchscript', 7, 640, 640,
+        labelPath: 'assets/labels/labels_lights.txt',
+        objectDetectionModelType: ObjectDetectionModelType.yolov8);
     // Load bestsigns.torchscript
     modelSigns = await PytorchLite.loadObjectDetectionModel(
-      'assets/models/bestsigns.torchscript',
-      18,
-      640,
-      640,
-      labelPath: 'assets/labels/labels_signs.txt',
-      objectDetectionModelType: ObjectDetectionModelType.yolov8
-    );
+        'assets/models/bestsigns.torchscript', 18, 640, 640,
+        labelPath: 'assets/labels/labels_signs.txt',
+        objectDetectionModelType: ObjectDetectionModelType.yolov8);
     print('Models loaded successfully');
   } catch (e) {
     print('Error loading models: $e');
@@ -52,12 +40,9 @@ Future<void> processFrame(CameraImage image, int rotation) async {
   // Predict using the loaded models
   if (modelBulbs != null) {
     try {
-      List<ResultObjectDetection>? detectedBulbs = await modelBulbs!.getCameraImagePrediction(
-        image,
-        rotation: rotation,
-        minimumScore: 0.1,
-        iOUThreshold: 0.3
-      );
+      List<ResultObjectDetection>? detectedBulbs = await modelBulbs!
+          .getCameraImagePrediction(image,
+              rotation: rotation, minimumScore: 0.5, iOUThreshold: 0.3);
       print('Detected bulbs: ${detectedBulbs.length}');
     } catch (e) {
       print('Error predicting bulbs: $e');
@@ -65,12 +50,9 @@ Future<void> processFrame(CameraImage image, int rotation) async {
   }
   if (modelLights != null) {
     try {
-      List<ResultObjectDetection>? detectedLights = await modelLights!.getCameraImagePrediction(
-        image,
-        rotation: rotation,
-        minimumScore: 0.1,
-        iOUThreshold: 0.3
-      );
+      List<ResultObjectDetection>? detectedLights = await modelLights!
+          .getCameraImagePrediction(image,
+              rotation: rotation, minimumScore: 0.5, iOUThreshold: 0.3);
       print('Detected lights: ${detectedLights.length}');
     } catch (e) {
       print('Error predicting lights: $e');
@@ -78,12 +60,9 @@ Future<void> processFrame(CameraImage image, int rotation) async {
   }
   if (modelSigns != null) {
     try {
-      List<ResultObjectDetection>? detectedSigns = await modelSigns!.getCameraImagePrediction(
-        image,
-        rotation: rotation,
-        minimumScore: 0.1,
-        iOUThreshold: 0.3
-      );
+      List<ResultObjectDetection>? detectedSigns = await modelSigns!
+          .getCameraImagePrediction(image,
+              rotation: rotation, minimumScore: 0.4, iOUThreshold: 0.3);
       print('Detected signs: ${detectedSigns.length}');
     } catch (e) {
       print('Error predicting signs: $e');
