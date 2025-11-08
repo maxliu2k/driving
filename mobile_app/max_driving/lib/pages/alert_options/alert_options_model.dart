@@ -17,6 +17,8 @@ class AlertOptionsModel extends FlutterFlowModel<AlertOptionsWidget> {
   bool? switchListTileValue2;
   // State field(s) for SwitchListTile widget.
   bool? switchListTileValue3;
+  // State field(s) for SwitchListTile widget.
+  bool? switchListTileValue4;
 
   @override
   void initState(BuildContext context) {}

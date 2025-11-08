@@ -33,6 +33,16 @@ class _ManageDataWidgetState extends State<ManageDataWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => ManageDataModel());
+
+    Data.getData('sessionCap').then((value) {
+      setState(() {
+        if (value == null) {
+          value = 5;
+          Data.saveData('sessionCap', value);
+        }
+        _model.sessionCapValue = value.toDouble();
+      });
+    });
   }
 
   @override
@@ -195,6 +205,27 @@ class _ManageDataWidgetState extends State<ManageDataWidget> {
           //         EdgeInsetsDirectional.fromSTEB(24.0, 12.0, 24.0, 12.0),
           //   ),
           // ),
+
+          // Slider for session cap
+          Material(
+            color: Colors.transparent,
+            child: Slider.adaptive(
+              value: _model.sessionCapValue ??= 30.0,
+              onChanged: (newValue) {
+                safeSetState(() {
+                  _model.sessionCapValue = newValue;
+
+                  Data.saveData('sessionCap', newValue);
+                });
+              },
+              min: 5.0,
+              max: 30.0,
+              divisions: 25,
+              activeColor: Color(0xFF4B39EF),
+              inactiveColor: Color(0xFF9E9E9E),
+            ),
+          ),
+
           SizedBox(
             width: double.infinity,
           ),

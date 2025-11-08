@@ -12,6 +12,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:max_driving/services/data.dart';
 import 'dashboard_model.dart';
 export 'dashboard_model.dart';
 
@@ -50,32 +51,110 @@ class _DashboardWidgetState extends State<DashboardWidget>
   //   30,
   //   (index) => index == 0 ? 90 : Random().nextInt(100),
   // );
-  List<int> yData =[85, 92, 86, 88, 89, 88, 86, 91, 89, 89, 90, 90, 88, 92, 91, 89, 91, 93, 92, 91, 90, 93, 91, 95, 92, 94, 95, 96, 93, 95];
-
+  List<int> yData = [
+    85,
+    92,
+    86,
+    88,
+    89,
+    88,
+    86,
+    91,
+    89,
+    89,
+    90,
+    90,
+    88,
+    92,
+    91,
+    89,
+    91,
+    93,
+    92,
+    91,
+    90,
+    93,
+    91,
+    95,
+    92,
+    94,
+    95,
+    96,
+    93,
+    95
+  ];
 
   List<Map<String, dynamic>> recentSessions = [
-     {
-      'sessionTime': '15 mins',
-      'lightsRan': 0,      
-      'stopSignsMissed': 1,
-      'speedViolations': 1,
-      'turnSignalsMissed': 1,
-      'score': 93,
-    },
-    {
-      'sessionTime': '20 mins',
-      'lightsRan': 0,      
-      'stopSignsMissed': 1,
-      'speedViolations': 0,
-      'turnSignalsMissed': 1,
-      'score': 95,
-    },
+    //  {
+    //   'sessionTime': '15 mins',
+    //   'lightsRan': 0,
+    //   'stopSignsMissed': 1,
+    //   'speedViolations': 1,
+    //   'turnSignalsMissed': 1,
+    //   'score': 93,
+    // },
+    // {
+    //   'sessionTime': '20 mins',
+    //   'lightsRan': 0,
+    //   'stopSignsMissed': 1,
+    //   'speedViolations': 0,
+    //   'turnSignalsMissed': 1,
+    //   'score': 95,
+    // },
   ];
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => DashboardModel());
+
+    // Attempt to load previous session data
+    Data.getData('pastSessions').then(
+      (value) {
+        if (value != null) {
+          // convert the List<string> back to List<Map<String, dynamic>>
+          List<String> sessionStrings = List<String>.from(value);
+          recentSessions = sessionStrings
+              .map((String sessionString) => Map<String, dynamic>.from(
+                    jsonDecode(sessionString) as Map<String, dynamic>,
+                  ))
+              .toList();
+
+          // Update the chart data
+          yData =
+              recentSessions.map((session) => session['score'] as int).toList();
+          xData = List.generate(
+            recentSessions.length,
+            (index) => index + 1,
+          );
+
+          Data.getData('sessionCap').then((value) {
+            if (value != null) {
+              int sessionCap = value as int;
+
+              if (recentSessions.length > sessionCap) {
+                recentSessions = recentSessions.sublist(
+                  recentSessions.length - sessionCap,
+                );
+
+                yData = recentSessions
+                    .map((session) => session['score'] as int)
+                    .toList();
+
+                xData = List.generate(
+                  recentSessions.length,
+                  (index) => index + 1,
+                );
+              }
+            }
+
+            setState(() {});
+          });
+
+          // setState(() {});
+        }
+      },
+    );
 
     animationsMap.addAll({
       'containerOnActionTriggerAnimation1': AnimationInfo(
@@ -507,7 +586,9 @@ class _DashboardWidgetState extends State<DashboardWidget>
                                                             .spaceBetween,
                                                     children: [
                                                       Text(
-                                                        (recentSessions.isEmpty) ? 'No Previous Session' : 'Last Session (10/20/25)',
+                                                        (recentSessions.isEmpty)
+                                                            ? 'No Previous Session'
+                                                            : 'Last Session (10/20/25)',
                                                         style: FlutterFlowTheme
                                                                 .of(context)
                                                             .bodySmall
@@ -531,9 +612,11 @@ class _DashboardWidgetState extends State<DashboardWidget>
                                                         EdgeInsetsDirectional
                                                             .fromSTEB(0.0, 4.0,
                                                                 0.0, 0.0),
-                                                    child: Text( // most recent entry
-                                                      (recentSessions.isEmpty) ? 'Session time:\nRed lights ran:\nStop signs missed:\nSpeed limit violations:\nTurning signals missed:' :
-                                                      "Session time: ${recentSessions.last['sessionTime']}\nRed lights ran: ${recentSessions.last['lightsRan']}\nStop signs missed: ${recentSessions.last['stopSignsMissed']}\nSpeed limit violations: ${recentSessions.last['speedViolations']}\nTurning signals missed: ${recentSessions.last['turnSignalsMissed']}",                                                   
+                                                    child: Text(
+                                                      // most recent entry
+                                                      (recentSessions.isEmpty)
+                                                          ? 'Session time:\nRed lights ran:\nStop signs missed:\nSpeed limit violations:\nTurning signals missed:'
+                                                          : "Session time: ${recentSessions.last['sessionTime']}\nRed lights ran: ${recentSessions.last['lightsRan']}\nStop signs missed: ${recentSessions.last['stopSignsMissed']}\nSpeed limit violations: ${recentSessions.last['speedViolations']}\nTurning signals missed: ${recentSessions.last['turnSignalsMissed']}",
                                                       style: FlutterFlowTheme
                                                               .of(context)
                                                           .bodyMedium
@@ -589,7 +672,10 @@ class _DashboardWidgetState extends State<DashboardWidget>
                                                         ),
                                                         Expanded(
                                                           child: Text(
-                                                            (recentSessions.isEmpty) ? 'null' : "${recentSessions.last['score']}",
+                                                            (recentSessions
+                                                                    .isEmpty)
+                                                                ? 'null'
+                                                                : "${recentSessions.last['score']}",
                                                             style: FlutterFlowTheme
                                                                     .of(context)
                                                                 .bodyMedium
@@ -719,10 +805,9 @@ class _DashboardWidgetState extends State<DashboardWidget>
                                       )
                                     ],
                                     chartStylingInfo: ChartStylingInfo(
-                                      enableTooltip: true,
-                                      backgroundColor: Colors.white,
-                                      showBorder: false
-                                    ),
+                                        enableTooltip: true,
+                                        backgroundColor: Colors.white,
+                                        showBorder: false),
                                     //axisBounds: AxisBounds(),
                                     axisBounds: AxisBounds(
                                       minY: 70,
@@ -730,15 +815,16 @@ class _DashboardWidgetState extends State<DashboardWidget>
                                     ),
                                     xAxisLabelInfo: AxisLabelInfo(
                                       title: 'Last 30 Sessions',
-                                      titleTextStyle: FlutterFlowTheme.of(context)
-                                          .bodyMedium
-                                          .override(
-                                            fontFamily: 'Plus Jakarta Sans',
-                                            color: Color(0xFF14181B),
-                                            fontSize: 14.0,
-                                            letterSpacing: 0.0,
-                                            fontWeight: FontWeight.normal,
-                                          ),
+                                      titleTextStyle:
+                                          FlutterFlowTheme.of(context)
+                                              .bodyMedium
+                                              .override(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                color: Color(0xFF14181B),
+                                                fontSize: 14.0,
+                                                letterSpacing: 0.0,
+                                                fontWeight: FontWeight.normal,
+                                              ),
                                     ),
                                     // yAxisLabelInfo: AxisLabelInfo(
                                     //   title: 'Score',
@@ -754,26 +840,30 @@ class _DashboardWidgetState extends State<DashboardWidget>
                                     // ),
                                     yAxisLabelInfo: AxisLabelInfo(
                                       title: 'Score',
-                                      titleTextStyle: FlutterFlowTheme.of(context)
-                                          .bodyMedium
-                                          .override(
-                                            fontFamily: 'Plus Jakarta Sans',
-                                            color: Color(0xFF14181B),
-                                            fontSize: 14.0,
-                                            letterSpacing: 0.0,
-                                            fontWeight: FontWeight.normal,
-                                          ),
-                                      labelTextStyle: FlutterFlowTheme.of(context)
-                                          .bodyMedium
-                                          .override(
-                                            fontFamily: 'Plus Jakarta Sans',
-                                            fontSize: 10.0, // make tick labels smaller
-                                          ),
-                                      showLabels: true,   
+                                      titleTextStyle:
+                                          FlutterFlowTheme.of(context)
+                                              .bodyMedium
+                                              .override(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                color: Color(0xFF14181B),
+                                                fontSize: 14.0,
+                                                letterSpacing: 0.0,
+                                                fontWeight: FontWeight.normal,
+                                              ),
+                                      labelTextStyle:
+                                          FlutterFlowTheme.of(context)
+                                              .bodyMedium
+                                              .override(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                fontSize:
+                                                    10.0, // make tick labels smaller
+                                              ),
+                                      showLabels: true,
                                       labelInterval: 10, // show label every 10
                                       labelFormatter: LabelFormatter(
-                                        numberFormat: (double val) => val.toInt().toString(),
-                                      ),// display integer
+                                        numberFormat: (double val) =>
+                                            val.toInt().toString(),
+                                      ), // display integer
                                     ),
                                   ),
                                 ),
@@ -783,17 +873,16 @@ class _DashboardWidgetState extends State<DashboardWidget>
                                     width: 100,
                                     height: 175.0,
                                     decoration: BoxDecoration(
-                                      border: Border(
-                                        left: BorderSide(
-                                          color: Color(0xFFE0E3E7),
-                                          width: 1.0,
-                                        ),
-                                        bottom: BorderSide(
-                                          color: Color(0xFFE0E3E7),
-                                          width: 1.0,
-                                        ),
-                                      )
-                                    ),
+                                        border: Border(
+                                      left: BorderSide(
+                                        color: Color(0xFFE0E3E7),
+                                        width: 1.0,
+                                      ),
+                                      bottom: BorderSide(
+                                        color: Color(0xFFE0E3E7),
+                                        width: 1.0,
+                                      ),
+                                    )),
                                   ),
                                 )
                               ],

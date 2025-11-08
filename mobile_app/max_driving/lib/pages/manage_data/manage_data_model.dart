@@ -18,6 +18,9 @@ class ManageDataModel extends FlutterFlowModel<ManageDataWidget> {
   // State field(s) for SwitchListTile widget.
   bool? switchListTileValue3;
 
+  // Session Cap Slider
+  double? sessionCapValue;
+
   @override
   void initState(BuildContext context) {}
 
