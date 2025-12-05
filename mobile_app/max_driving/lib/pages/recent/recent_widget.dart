@@ -279,45 +279,48 @@ class _RecentWidgetState extends State<RecentWidget> {
 
   @override
   Widget build(BuildContext context) {
-    List<SideMenuItem> sidebarItems = [
-      // TODO: fix tab behaviour to move to other screens
-      SideMenuItem(
-        title: 'Dashboard',
-        icon: const Icon(Icons.home),
-        onTap: (index, _) {
-          // go to dashboard
-          safeSetState(() {
-            _currentPage = null;
-            _currentPageName = 'Dashboard';
-            sideMenuController.changePage(index);
-          });
-        },
-      ),
-      SideMenuItem(
-        title: 'Settings',
-        icon: const Icon(Icons.settings),
-        onTap: (index, _) {
-          // go to settings
-          safeSetState(() {
-            _currentPage = null;
-            _currentPageName = 'Settings';
-            sideMenuController.changePage(index);
-          });
-        },
-      ),
-      SideMenuItem(
-        title: 'Session',
-        icon: const Icon(Icons.photo_camera),
-        onTap: (index, _) {
-          // go to session
-          safeSetState(() {
-            _currentPage = null;
-            _currentPageName = 'Session';
-            sideMenuController.changePage(index);
-          });
-        },
-      ),
-    ];
+    // List<SideMenuItem> sidebarItems = [
+    //   // TODO: fix tab behaviour to move to other screens
+    //   SideMenuItem(
+    //     title: 'Dashboard',
+    //     icon: const Icon(Icons.home),
+    //     onTap: (index, _) {
+    //       print('Dashboard tapped going to idx: $index');
+    //       // go to dashboard
+    //       safeSetState(() {
+    //         _currentPage = null;
+    //         _currentPageName = 'Dashboard';
+    //         sideMenuController.changePage(index);
+    //       });
+    //     },
+    //   ),
+    //   SideMenuItem(
+    //     title: 'Settings',
+    //     icon: const Icon(Icons.settings),
+    //     onTap: (index, _) {
+    //       print('Settings tapped going to idx: $index');
+    //       // go to settings
+    //       safeSetState(() {
+    //         _currentPage = null;
+    //         _currentPageName = 'Settings';
+    //         sideMenuController.changePage(index);
+    //       });
+    //     },
+    //   ),
+    //   SideMenuItem(
+    //     title: 'Session',
+    //     icon: const Icon(Icons.photo_camera),
+    //     onTap: (index, _) {
+    //       print('Session tapped going to idx: $index');
+    //       // go to session
+    //       safeSetState(() {
+    //         _currentPage = null;
+    //         _currentPageName = 'Session';
+    //         sideMenuController.changePage(index);
+    //       });
+    //     },
+    //   ),
+    // ];
     // Check device orientation
     final orient = MediaQuery.of(context).orientation;
 
@@ -360,17 +363,18 @@ class _RecentWidgetState extends State<RecentWidget> {
             : null,
         body: Row(
           children: [
-            SideMenu(
-              controller: sideMenuController,
-              style: SideMenuStyle(
-                  displayMode: SideMenuDisplayMode.compact,
-                  itemBorderRadius: const BorderRadius.all(Radius.circular(50)),
-                  backgroundColor: Colors.white,
-                  iconSize: 24,
-                  itemOuterPadding:
-                      EdgeInsets.symmetric(horizontal: 5, vertical: 25)),
-              items: sidebarItems,
-            ),
+            // if (orient != Orientation.portrait)
+            //   SideMenu(
+            //     controller: sideMenuController,
+            //     style: SideMenuStyle(
+            //         displayMode: SideMenuDisplayMode.compact,
+            //         itemBorderRadius: const BorderRadius.all(Radius.circular(50)),
+            //         backgroundColor: Colors.white,
+            //         iconSize: 24,
+            //         itemOuterPadding:
+            //             EdgeInsets.symmetric(horizontal: 5, vertical: 25)),
+            //     items: sidebarItems,
+            //   ),
             Expanded(
               child: SafeArea(
                 top: true,
@@ -378,6 +382,40 @@ class _RecentWidgetState extends State<RecentWidget> {
                   child: Column(
                     mainAxisSize: MainAxisSize.max,
                     children: [
+                      // Embedded Appbar
+                      if (orient != Orientation.portrait)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                            0.0, 0.0, 0.0, 12.0),
+                        child: AppBar(
+                          backgroundColor: Colors.white,
+                          automaticallyImplyLeading: false,
+                          leading: FlutterFlowIconButton(
+                            borderColor: Colors.transparent,
+                            borderRadius: 30.0,
+                            buttonSize: 46.0,
+                            icon: const Icon(
+                              Icons.arrow_back_rounded,
+                              color: Color(0xFF14181B),
+                              size: 25.0,
+                            ),
+                            onPressed: () async {
+                              context.pop();
+                            },
+                          ),
+                          title: Text(
+                            'Recent Activity',
+                            style:
+                                FlutterFlowTheme.of(context).headlineMedium.override(
+                                      fontFamily: 'Outfit',
+                                      letterSpacing: 0.0,
+                                    ),
+                          ),
+                          actions: [],
+                          centerTitle: false,
+                          elevation: 0.0,
+                        ),
+                      ),
                       Align(
                         alignment: AlignmentDirectional(0.0, 0.0),
                         child: Padding(

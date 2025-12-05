@@ -130,7 +130,15 @@ class _SessionWidgetState extends State<SessionWidget>
               size: 25.0,
             ),
             onPressed: () async {
-              context.pop();
+              // context.pop();
+              if (animationsMap['buttonOnActionTriggerAnimation'] !=
+                  null) {
+                await animationsMap['buttonOnActionTriggerAnimation']!
+                    .controller
+                    .forward(from: 0.0);
+              }
+
+              context.pushNamed(DashboardWidget.routeName);
             },
           ),
           title: Text(

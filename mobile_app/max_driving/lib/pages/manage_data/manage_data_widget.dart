@@ -207,6 +207,17 @@ class _ManageDataWidgetState extends State<ManageDataWidget> {
           // ),
 
           // Slider for session cap
+          Text(
+            "Graph Display Length",
+            style: FlutterFlowTheme.of(context).bodyLarge.override(
+                  fontFamily: 'Plus Jakarta Sans',
+                  color: Color(0xFF14181B),
+                  fontSize: 16.0,
+                  letterSpacing: 0.0,
+                  fontWeight: FontWeight.normal,
+                  lineHeight: 2.0,
+                ),
+          ),
           Material(
             color: Colors.transparent,
             child: Slider.adaptive(
@@ -224,6 +235,16 @@ class _ManageDataWidgetState extends State<ManageDataWidget> {
               activeColor: Color(0xFF4B39EF),
               inactiveColor: Color(0xFF9E9E9E),
             ),
+          ),
+          Text(
+            '${_model.sessionCapValue?.toInt()} Sessions',
+            style: FlutterFlowTheme.of(context).bodyMedium.override(
+                  fontFamily: 'Plus Jakarta Sans',
+                  color: Color(0xFF14181B),
+                  fontSize: 14.0,
+                  letterSpacing: 0.0,
+                  fontWeight: FontWeight.normal,
+                ),
           ),
 
           SizedBox(
