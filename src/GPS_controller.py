@@ -3,10 +3,10 @@ import time
 # import adafruit_gps
 
 
-# ===============================
-# GPS Manager: Manages the GPS module - handles initialization, location, and speed data.
-# ===============================
-class GPSManager:
+# ==========================================================================================
+# GPS Controller: Control the GPS module - handles initialization, location, and speed data.
+# ==========================================================================================
+class GPSController:
     # Initializes the GPS connection, configures output sentences, and sets the update rate.
     def __init__(self, port="/dev/ttyUSB0", baudrate=9600, timeout=30, update_rate=1.0):
         # Initialize UART connection
@@ -19,7 +19,8 @@ class GPSManager:
         # Set update frequency in milliseconds
         self.gps.send_command(f'PMTK220,{int(1000/update_rate)}'.encode())
 
-        self.update_rate = update_rate  # Output interval in seconds
+        # Output interval in seconds
+        self.update_rate = update_rate  
 
     # Fetch new data from the GPS module.
     def update(self):

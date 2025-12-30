@@ -19,10 +19,9 @@ try:
 except Exception:
     _HAVE_PYDUB = False
 
-# ===============================
+# =====================================================================================================
 # Turn Signal Detection Engine:Core engine for turn signal detection using a Mel-Spectrogram CNN model.
-#                              Responsible for model loading, audio processing, and inference.#
-# ===============================
+# =====================================================================================================
 class TurnSignalDetectionEngine:
     # Initialize the detection engine with model path and device.
     def __init__(self, model_path: str, device: str):
@@ -101,7 +100,7 @@ class TurnSignalDetectionEngine:
         self.last_fire = 0.0
         self.silence = [] # call on_deactivate after not getting a hit 5 times in a row
 
-        #print(f"\n===========================🎙️ Mic @ {self.sr} Hz | class='{self.pos_name}' threshold={threshold}. Ctrl+C to stop.")
+        # print(f"\n===========================🎙️ Mic @ {self.sr} Hz | class='{self.pos_name}' threshold={threshold}. Ctrl+C to stop.")
 
         def callback(indata, frames, time_info, status):
             if status:
@@ -115,7 +114,7 @@ class TurnSignalDetectionEngine:
             self.ring[-self.S:] = x[:self.S]
 
             p = self.probs_from_waveform(self.ring.unsqueeze(0))[self.pos_idx]
-            #print(f"===========================p({self.pos_name})={p:.2f}", end="\r")
+            # print(f"===========================p({self.pos_name})={p:.2f}", end="\r")
             now = time.time()
             if p >= threshold and (now - self.last_fire) >= min_gap_s:
                 self.last_fire = now

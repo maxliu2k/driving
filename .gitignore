@@ -3,7 +3,7 @@ rpi-logic/venv
 *.mp4
 *.mov
 *.MOV
-src/research*.py
+#src/research*.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

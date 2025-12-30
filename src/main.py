@@ -237,17 +237,16 @@ def main():
     start_time = datetime.now()
 
     imu_controller = IMUController()
-    
-    gps_controller = IMUController()
+    gps_controller = GPSController()
+    turn_signal_detection_manager = TurnSignalDetectionManager("models/sound/turn_signal_cnn.pt", "cpu")
+    voice_playback_manager = VoicePlaybackManager("models/voice/piper.onnx")
+    speed_limit_ocr = SpeedLimitOCR(['en'])
 
     print("===========================Starting turn signal detection engine...")
-    turn_signal_detection_manager = TurnSignalDetectionManager("models/sound/turn_signal_cnn.pt", "cpu")
     turn_signal_detection_manager.start()
 
     print("===========================Starting voice playback engine...")  
-    voice_playback_manager = VoicePlaybackManager("models/voice/piper.onnx")
     voice_playback_manager.start()
-  
 
     # Initialize traffic lights and signs to false
     traffic_control_flag = {
@@ -275,6 +274,12 @@ def main():
     
     last_confirmed_traffic_control_flag = traffic_control_flag.copy()
 
+    # Load YOLO model
+    l_model = YOLO('models/image/best_light.pt')
+    b_model = YOLO('models/image/best_bulb.pt')
+    s_model = YOLO('models/image/best_sign.pt') 
+
+    # OCR engine for speed-limit signs
     speed_limit_ocr = SpeedLimitOCR(['en'])
 
     # last_speed_bbox = None
@@ -288,11 +293,6 @@ def main():
     speed_limit_ocr_conf_threshold = 80
     diff_conf = 0.1
 
-    # Load YOLO model
-    l_model = YOLO('models/image/best_light.pt')
-    b_model = YOLO('models/image/best_bulb.pt')
-    s_model = YOLO('models/image/best_sign.pt') 
-
     # Start video stream
     print("===========================Starting video capture...")
     # cap = cv2.VideoCapture(0)
@@ -300,13 +300,13 @@ def main():
     cap = cv2.VideoCapture('tests/video/IMG_1409.mov')
     count = 0
     PROCESS_EVERY_N = 10
-    while cap.isOpened():
-        count += 1
+    while cap.isOpened():  
         # Read video frame
         ret, frame = cap.read()
         if not ret:
             break
         
+        count += 1
         if (count % PROCESS_EVERY_N== 0):        
             # Each iteration, reset current_traffic_control_flag
             current_traffic_control_flag = traffic_control_flag.copy()
@@ -314,7 +314,6 @@ def main():
 
             # =======================================
             # 1: Traffic Lights Detection via YOLO
-            # stop, stopLeft, stopRight, go, goLeft, goRight, warning, warningLeft, warningRight
             # =======================================
 
             # Detect traffic lights.
@@ -327,7 +326,7 @@ def main():
                     l_box_name = l_class_names[int(l_box.cls[0].item())]           
                     plot_box_list.append((l_box, l_box_name, 0, 0))
 
-                    # Crop traffic light image box
+                    # Crop around the detected traffic light
                     l_x, l_y, l_w, l_h = map(int, l_box.xywh[0])   
                     cropped_traffic_light_frame = crop_image(frame, (l_x - l_w/2, l_y - l_h/2, l_w, l_h))                   
                     cropped_traffic_light_frame = cv2.resize(cropped_traffic_light_frame, 
@@ -337,11 +336,11 @@ def main():
                                                 interpolation=cv2.INTER_CUBIC  
                                                 )
                     
-                    # Detect light bulbs in the cropped image.
+                    # Detect bulbs inside the light
                     b_results = b_model(cropped_traffic_light_frame, verbose=False)
                     b_class_names = b_model.names   
                     
-                    # Determine the dominant color for forward, left, and right directions
+                    # Determine the dominant color for straight, turn-left, and turn-right directions
                     dominant_color, dominant_color_box_list = analyze_light_bulbs(
                         b_results, b_class_names, b_conf_threshold, diff_conf
                     )
@@ -360,7 +359,6 @@ def main():
 
             # =======================================
             # 2: Traffic Signs Detection via YOLO
-            # stop, stopAhead, yield, yieldAhead, speedLimit
             # =======================================
 
             # Detect traffic signs.
@@ -386,7 +384,8 @@ def main():
                         case "yieldAhead":
                             current_traffic_control_flag["YieldAheadTrafficSign"]=True
                             plot_box_list.append((s_box, s_box_name, 0, 0))
-                        case _:  
+                        case _:
+                            # Treat as potential speed-limit sign  
                             s_x1, s_y1, s_x2, s_y2 = map(int, s_box.xyxy[0])                                                      
                             cropped = frame[s_y1:s_y2, s_x1:s_x2]
                             
@@ -438,7 +437,7 @@ def main():
             if not turn_signal_detection_manager.is_blinker_on and imu_controller.detect_turn() != "Straight":
                 # voice_playback_manager.speak_queued("Do not forget to use your turn signal when turning! ")
                 # print("===========================Do not forget to use your turn signal when turning! ")  
-               voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/turn_signal.wav") 
+                voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/turn_signal.wav") 
             
             # Voice Alert for speeding
             if current_traffic_control_flag["SpeedLimitTrafficSign"] and not last_confirmed_traffic_control_flag["SpeedLimitTrafficSign"]:
@@ -450,11 +449,10 @@ def main():
                     voice_playback_manager.speak_queued("mobile_app/max_driving/assets/audios/speed_limit.wav")
                 last_confirmed_traffic_control_flag["SpeedLimitTrafficSign"] = current_traffic_control_flag["SpeedLimitTrafficSign"]      
 
-            
 
             # Voice Alert for others
             for key in current_traffic_control_flag:
-                # If a traffic control has been detected three times in a row and was not previously confirmed as detected.                       
+                # If the traffic control is detected three times in a row and was not previously confirmed as detected.                      
                 if all(traffic_control_flag_history[i][key] for i in range(3)) and not last_confirmed_traffic_control_flag[key]:
 
                     #if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRightTurnTrafficLight", "StopTrafficSign", "StopAheadTrafficSign", "YieldTrafficSign", "YieldAheadTrafficSign"):
@@ -477,7 +475,7 @@ def main():
 
                     last_confirmed_traffic_control_flag[key] = current_traffic_control_flag[key]
                                      
-                # If a traffic control has not been detected for three times in a row and was previously confirmed as detected.    
+                # If the traffic control is not detected for three times in a row and was previously confirmed as detected.   
                 if all(not traffic_control_flag_history[i][key] for i in range(3)) and last_confirmed_traffic_control_flag[key]:          
                     #if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRightTurnTrafficLight"):
                         # voice_playback_manager.speak_queued(f"{traffic_control_name[key]} no longer detected.")
@@ -501,10 +499,14 @@ def main():
             #cv2.setWindowProperty("Annotated Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
             cv2.imshow("Annotated Frame", frame)
 
+
+            # =======================================
+            # 5: Exit
+            # =======================================
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            if (count % 10 == 0):
+            if (count % PROCESS_EVERY_N == 0):
                # Small delay to ease CPU load
                sleep(0.20) 
 
