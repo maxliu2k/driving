@@ -4,6 +4,7 @@ rpi-logic/venv
 *.mov
 *.MOV
 #src/research*.py
+src/main_windows_Demo*.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

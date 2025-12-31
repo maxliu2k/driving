@@ -181,7 +181,7 @@ def plot_boxes(frame, plot_box_list):
     thickness = 2
     for plot_box_item in plot_box_list:
         # Unpack tuple: box, class_name, offset_x, offset_y
-        box, box_name, offset_x, offset_y = plot_box_item
+        model, box, box_name, offset_x, offset_y = plot_box_item
         box_conf = box.conf[0].item()
         x1, y1, x2, y2 = map(int, box.xyxy[0])                    
 
@@ -190,43 +190,46 @@ def plot_boxes(frame, plot_box_list):
         x2 = int(x2 + offset_x)
         y2 = int(y2 + offset_y)
 
-        match box_name:
-            case "trafficLight":
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
-                cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
-            case "stop":
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
-                cv2.putText(frame, '', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness) 
-            case "stopLeft":
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
-                cv2.putText(frame, 'left', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness)
-            case "stopRight":
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
-                cv2.putText(frame, 'right', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness)
-            case "go":
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), thickness)
-                cv2.putText(frame, '', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
-            case "goLeft":
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), thickness)
-                cv2.putText(frame, 'left', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
-            case "goRight":
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), thickness)
-                cv2.putText(frame, 'right', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
-            case "warning":
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), thickness)
-                cv2.putText(frame, '', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness)                           
-            case "warningLeft":
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), thickness)
-                cv2.putText(frame, 'left', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness) 
-            case "warningRight":
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), thickness)
-                cv2.putText(frame, 'right', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness)     
-            case "stop"|"stopAhead"|"yield"|"yieldAhead":
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
-                cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)
-            case _:
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
-                cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)  
+        if model in ('traffic_light', 'traffic_bulb'):
+            match box_name:
+                case "trafficLight":
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
+                    cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)
+                case "stop":
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                    cv2.putText(frame, '', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness) 
+                case "stopLeft":
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                    cv2.putText(frame, 'left', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness)
+                case "stopRight":
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                    cv2.putText(frame, 'right', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 0, 255), thickness)
+                case "go":
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), thickness)
+                    cv2.putText(frame, '', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
+                case "goLeft":
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), thickness)
+                    cv2.putText(frame, 'left', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
+                case "goRight":
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), thickness)
+                    cv2.putText(frame, 'right', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 0), thickness)
+                case "warning":
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), thickness)
+                    cv2.putText(frame, '', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness)                           
+                case "warningLeft":
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), thickness)
+                    cv2.putText(frame, 'left', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness) 
+                case "warningRight":
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), thickness)
+                    cv2.putText(frame, 'right', (int(x2), int(y2) + 10), cv2.FONT_HERSHEY_SIMPLEX, small_font_scale, (0, 255, 255), thickness)     
+        elif model=='traffic_sign':
+            match box_name:
+                case "stop"|"stopAhead"|"yield"|"yieldAhead":
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), thickness)
+                    cv2.putText(frame, f'{box_name} {box_conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (0, 0, 255), thickness)
+                case _:
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), thickness)
+                    cv2.putText(frame, f'speedLimit {box_conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, big_font_scale, (255, 0, 0), thickness)  
     
 # ========================================
 # Main function
@@ -324,7 +327,7 @@ def main():
             for l_box in l_results[0].boxes:
                 if l_box.conf[0] > l_conf_threshold:                   
                     l_box_name = l_class_names[int(l_box.cls[0].item())]           
-                    plot_box_list.append((l_box, l_box_name, 0, 0))
+                    plot_box_list.append(('traffic_light', l_box, l_box_name, 0, 0))
 
                     # Crop around the detected traffic light
                     l_x, l_y, l_w, l_h = map(int, l_box.xywh[0])   
@@ -355,7 +358,7 @@ def main():
                     # Calculate the crop to offsets
                     offset_x = int(l_x - l_w/2)
                     offset_y = int(l_y - l_h/2)
-                    plot_box_list.extend([(b_box, b_box_name, offset_x, offset_y) for (b_box, b_box_name) in dominant_color_box_list])
+                    plot_box_list.extend([('traffic_bulb', b_box, b_box_name, offset_x, offset_y) for (b_box, b_box_name) in dominant_color_box_list])
 
             # =======================================
             # 2: Traffic Signs Detection via YOLO
@@ -374,16 +377,16 @@ def main():
                     match s_box_name:
                         case "stop":
                             current_traffic_control_flag["StopTrafficSign"]=True
-                            plot_box_list.append((s_box, s_box_name, 0, 0))                                                   
+                            plot_box_list.append(('traffic_sign', s_box, s_box_name, 0, 0))                                                   
                         case "stopAhead":
                             current_traffic_control_flag["StopAheadTrafficSign"]=True
-                            plot_box_list.append((s_box, s_box_name, 0, 0))
+                            plot_box_list.append(('traffic_sign', s_box, s_box_name, 0, 0))
                         case "yield":
                             current_traffic_control_flag["YieldTrafficSign"]=True
-                            plot_box_list.append((s_box, s_box_name, 0, 0))
+                            plot_box_list.append(('traffic_sign', s_box, s_box_name, 0, 0))
                         case "yieldAhead":
                             current_traffic_control_flag["YieldAheadTrafficSign"]=True
-                            plot_box_list.append((s_box, s_box_name, 0, 0))
+                            plot_box_list.append(('traffic_sign', s_box, s_box_name, 0, 0))
                         case _:
                             # Treat as potential speed-limit sign  
                             s_x1, s_y1, s_x2, s_y2 = map(int, s_box.xyxy[0])                                                      
@@ -400,7 +403,7 @@ def main():
                                 speed_limit_value = speed_limit_ocr.extract_speed_limit(cropped, speed_limit_ocr_conf_threshold)
                                 if speed_limit_value is not None:                                                              
                                     current_traffic_control_flag["SpeedLimitTrafficSign"]=True   
-                                    plot_box_list.append((s_box, s_box_name, 0, 0)) 
+                                    plot_box_list.append(('traffic_sign', s_box, s_box_name, 0, 0)) 
                                     if (s_box_conf := s_box.conf[0].item()) >= best_speed_limit_conf:
                                         best_speed_limit_conf, best_speed_limit_value = s_box_conf, speed_limit_value
                                     # print(f"===========================Extracted speed limit sign value: {speed_limit_value}")  

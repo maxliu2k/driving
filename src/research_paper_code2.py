@@ -43,7 +43,7 @@ except Exception:
 # IMU Controller: Controls the IMU(MPU6050) module
 # ================================================
 class IMUController:
-
+    # region Hardware constants
     # MPU6050 Registers
     PWR_MGMT_1   = 0x6B 
     SMPLRT_DIV   = 0x19
@@ -68,6 +68,7 @@ class IMUController:
     # Filtering and Thresholds
     GYRO_WINDOW = 10
     GYRO_THRESHOLD = 5.0  # degrees/sec
+    # endregion
 
     # Initializes the I2C bus, sets device address, creates a gyro buffer, and initializes the MPU6050 sensor.
     def __init__(self, bus_id=1, device_address=0x68):
@@ -120,8 +121,7 @@ class IMUController:
 
         if abs(gyro_avg) > self.GYRO_THRESHOLD:
             return "Right Turn" if gyro_avg > 0 else "Left Turn"
-        return "Straight"
-    
+        return "Straight" 
 
 # ==========================================================================================
 # GPS Controller: Control the GPS module - handles initialization, location, and speed data.
@@ -166,8 +166,7 @@ class GPSController:
                 return self.gps.speed_knots * 1.15078
             else:
                 print('===========================Driving speed is not available')
-                return None
-            
+                return None         
 
 # =============================================================
 # TTS Voice Engine: Core text-to-speech engine using PiperVoice
@@ -193,9 +192,6 @@ class TTSVoiceEngine:
         player = "afplay" if sys.platform == "darwin" else "aplay"
         subprocess.run(["aplay", "-"], input=buf.read(), check=True)
 
-    def speak(self, text: str):
-        self.speak_raw(text)
-
 # ==========================================================================================
 # Voice Playback Manager: Manages TTSVoiceEngine and queued playback in a background thread.
 # ==========================================================================================
@@ -216,7 +212,7 @@ class VoicePlaybackManager:
             text = self.voice_queue.get()
             if text is None:
                 break
-            self.voice_engine.speak(text)
+            self.voice_engine.speak_raw(text)
             self.voice_queue.task_done()
 
     # Start the voice worker thread.
@@ -227,7 +223,6 @@ class VoicePlaybackManager:
     def stop(self):
         self.voice_queue.put(None)
         self.worker_thread.join()
-
 
 # =====================================================================================================
 # Turn Signal Detection Engine:Core engine for turn signal detection using a Mel-Spectrogram CNN model.
@@ -308,9 +303,10 @@ class TurnSignalDetectionEngine:
 
         self.ring = torch.zeros(self.W, dtype=torch.float32)
         self.last_fire = 0.0
-        self.silence = [] # call on_deactivate after not getting a hit 5 times in a row
+        self.silence = []
 
         def callback(indata, frames, time_info, status):
+            # region of calculating detection probability: p 
             if status:
                 pass
             x = torch.from_numpy(indata.copy()).float()
@@ -322,16 +318,18 @@ class TurnSignalDetectionEngine:
             self.ring[-self.S:] = x[:self.S]
 
             p = self.probs_from_waveform(self.ring.unsqueeze(0))[self.pos_idx]
-
+            # endregion
+            
             now = time.time()
             if p >= threshold and (now - self.last_fire) >= min_gap_s:
                 self.last_fire = now
-                print(f"===========================🔔 Detected {self.pos_name} (p={p:.2f}) at {time.strftime('%H:%M:%S')}")
+                print(f"=========================== Detected {self.pos_name} (p={p:.2f}) at {time.strftime('%H:%M:%S')}")
                 self.silence = []
                 if on_detect:
                     on_detect(p, now)
             else:
                 self.silence.append(p)
+                # call on_deactivate after not getting a hit 5 times in a row
                 if len(self.silence) > 5:
                     self.silence = []
                     if on_deactivate:
