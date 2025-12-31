@@ -332,7 +332,8 @@ def main():
                 voice_playback_manager.speak_queued("Do not forget to use your turn signal when turning! ")
 
             # Voice Alert for speeding coaching
-            if current_traffic_control_flag["SpeedLimitTrafficSign"] and not last_confirmed_traffic_control_flag["SpeedLimitTrafficSign"]:
+            if (current_traffic_control_flag["SpeedLimitTrafficSign"] and 
+                not last_confirmed_traffic_control_flag["SpeedLimitTrafficSign"]):
                 gps_controller.update()
                 driving_mph = gps_controller.get_speed_mph()
                 if best_speed_limit_value is not None and driving_mph > best_speed_limit_value:                      
@@ -341,15 +342,16 @@ def main():
                 
             # Voice Alert for traffic-control coaching with 3-frame confirmation
             for key in current_traffic_control_flag:
-                # If the traffic-control is detected in three consecutive frames and was not previously confirmed as detected                   
+                # If the traffic-control is detected in three consecutive frames and was not previously confirmed as detected                  
                 if all(traffic_control_flag_history[i][key] for i in range(3)) and not last_confirmed_traffic_control_flag[key]:
-                    if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRightTurnTrafficLight", "StopTrafficSign", "StopAheadTrafficSign", "YieldTrafficSign", "YieldAheadTrafficSign"):
+                    if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRightTurnTrafficLight", 
+                               "StopTrafficSign", "StopAheadTrafficSign", "YieldTrafficSign", "YieldAheadTrafficSign"):
                         voice_playback_manager.speak_queued(f"{key} detected. ")               
 
                     last_confirmed_traffic_control_flag[key] = current_traffic_control_flag[key]
                                      
                 # If the traffic-control is not detected in three consecutive frames and was previously confirmed as detected  
-                if all(not traffic_control_flag_history[i][key] for i in range(3)) and last_confirmed_traffic_control_flag[key]:              
+                if all(not traffic_control_flag_history[i][key] for i in range(3)) and last_confirmed_traffic_control_flag[key]:
                     if key in ("RedTrafficLight", "RedLeftTurnTrafficLight", "RedRightTurnTrafficLight"):
                         voice_playback_manager.speak_queued(f"{key} no longer detected.")
                           
