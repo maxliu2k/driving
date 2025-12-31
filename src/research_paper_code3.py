@@ -219,6 +219,7 @@ def main():
         "YieldTrafficSign": False, 
         "YieldAheadTrafficSign": False, 
         "SpeedLimitTrafficSign": False}
+    
     traffic_control_flag_history = deque(maxlen=3)
     for _ in range(3):
         traffic_control_flag_history.append(traffic_control_flag.copy())  
@@ -256,9 +257,9 @@ def main():
             # Each iteration, reset current_traffic_control_flag
             current_traffic_control_flag = traffic_control_flag.copy()
 
-            # =======================================
-            # 1: Traffic Lights Detection via YOLO
-            # =======================================  
+            # ===================================
+            # 1: Traffic-light Detection via YOLO
+            # =================================== 
             # Detect traffic lights
             l_results = l_model(frame, verbose=False)                 
 
@@ -287,9 +288,8 @@ def main():
                         current_traffic_control_flag["RedRightTurnTrafficLight"] = True
 
             # =========================================
-            # 2: Traffic Signs Detection via YOLO + OCR
-            # ========================================= 
-                    
+            # 2: Traffic-sign Detection via YOLO + OCR
+            # =========================================                    
             # Detect traffic signs.
             s_results = s_model(frame, verbose=False)          
             s_class_names = s_model.names 
@@ -319,12 +319,14 @@ def main():
                                 if (s_box_conf := s_box.conf[0].item()) >= best_speed_limit_conf:
                                     best_speed_limit_conf, best_speed_limit_value = s_box_conf, speed_limit_value                   
 
+            # =============================================================
+            # 3: Add the detection status of current frame to history queue
+            # ============================================================= 
             traffic_control_flag_history.append(current_traffic_control_flag) 
                    
-            # =======================================
-            # 3: Voice Playback
-            # =======================================   
-
+            # =================
+            # 4: Voice Playback
+            # =================   
             # Voice Alert for turn-signal coaching
             if not turn_signal_detection_manager.is_blinker_on() and imu_controller.detect_turn() != "Straight":
                 voice_playback_manager.speak_queued("Do not forget to use your turn signal when turning! ")
@@ -354,9 +356,9 @@ def main():
                     last_confirmed_traffic_control_flag[key] = current_traffic_control_flag[key]
 
     
-            # =======================================
+            # =======
             # 5: Exit
-            # =======================================
+            # =======
             # Exit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
