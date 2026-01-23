@@ -298,7 +298,7 @@ def main():
     # Start video stream
     print("===========================Starting video capture...")
     # cap = cv2.VideoCapture(0)
-    cap = cv2.VideoCapture('tests/video/Demo_1080.mp4')
+    cap = cv2.VideoCapture('tests/video/Demo_1080_CongApp.mp4')
 
     count = 0
     PROCESS_EVERY_N = 10

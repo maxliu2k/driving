@@ -75,5 +75,6 @@ if __name__ == "__main__":
 
     v.speak_to_file("Do not forget to use your turn signal when turning!", "mobile_app/max_driving/assets/audios/turn_signal.wav")
     v.speak_to_file("You are above the detected speed limit of 45. Your speed is 48.", "mobile_app/max_driving/assets/audios/speed_limit_45.wav")
+    v.speak_to_file("You are above the detected speed limit.", "mobile_app/max_driving/assets/audios/speed_limit.wav")
     # or
     # v.speak_raw("Streaming from memory!")
