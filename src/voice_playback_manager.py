@@ -7,9 +7,9 @@ import threading
 import queue
 #from playsound import playsound
 
-# ===============================
+# =============================================================
 # TTS Voice Engine: Core text-to-speech engine using PiperVoice
-# ===============================
+# =============================================================
 class TTSVoiceEngine:
     # Initialize TTS engine with model path.
     def __init__(self, model_path: str):
@@ -36,9 +36,9 @@ class TTSVoiceEngine:
         self.speak_to_file(text)
 
 
-# ===============================
+# ==========================================================================================
 # Voice Playback Manager: Manages TTSVoiceEngine and queued playback in a background thread.
-# ===============================
+# ==========================================================================================
 class VoicePlaybackManager:
     # Initialize voice playback manager with a TTS engine and worker thread.
     def __init__(self, model_path: str):
@@ -56,8 +56,8 @@ class VoicePlaybackManager:
             text = self.voice_queue.get()
             if text is None:
                 break
-            #self.voice_engine.speak(text)
-            #playsound(text) 
+            # self.voice_engine.speak(text)
+            # playsound(text) 
             print(text)
             self.voice_queue.task_done()
 

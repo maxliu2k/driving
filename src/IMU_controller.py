@@ -1,9 +1,9 @@
 # import smbus
 from collections import deque
 
-# ===============================
+# ================================================
 # IMU Controller: Controls the IMU(MPU6050) module
-# ===============================
+# ================================================
 class IMUController:
     # MPU6050 Registers
     PWR_MGMT_1   = 0x6B 
@@ -32,7 +32,7 @@ class IMUController:
 
     # Initializes the I2C bus, sets device address, creates a gyro buffer, and initializes the MPU6050 sensor.
     def __init__(self, bus_id=1, device_address=0x68):
-        self.bus = smbus.SMBus(bus_id)
+        # self.bus = smbus.SMBus(bus_id)
         self.device_address = device_address
         self.gyro_buffer = deque(maxlen=self.GYRO_WINDOW)
         self.MPU_Init()
